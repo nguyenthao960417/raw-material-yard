@@ -16,7 +16,7 @@ select,input,textarea{padding:11px;border:1px solid #cbd5e1;border-radius:10px;w
 nav{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid #ddd;display:flex;justify-content:center;gap:8px;padding:8px;z-index:6}
 nav button{background:#fff;color:#17202a;border:1px solid #ddd;padding:8px 12px}.btn{display:inline-block;padding:11px 14px;border-radius:10px;background:#0f172a;color:#fff;cursor:pointer}.ocr-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.chip{border:1px solid #cbd5e1;background:#fff;color:#17202a;border-radius:999px;padding:7px 10px;font-size:12px;cursor:pointer}.match{font-size:11px;padding:3px 7px;border-radius:999px;background:#dcfce7;color:#166534}.warn{background:#fef3c7;color:#92400e}.detail-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.kv{background:#f8fafc;border-radius:10px;padding:9px}.kv b{display:block;font-size:11px;color:#64748b;margin-bottom:3px}.camera-frame{width:100%;max-height:52vh;object-fit:cover;background:#111;border-radius:12px}.ocr-workspace{background:#0f172a;border-radius:14px;padding:8px;touch-action:none;user-select:none}.ocr-canvas{display:block;width:100%;height:auto;border-radius:10px;background:#111;touch-action:none}.ocr-toolbar{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.ocr-stat{font-size:12px;color:#cbd5e1}.ocr-preview{width:100%;max-height:220px;object-fit:contain;background:#111;border-radius:10px;margin-top:8px}.preset{background:#e2e8f0;color:#17202a}.preset.active{background:#0f172a;color:#fff}@media(max-width:700px){.grid{grid-template-columns:repeat(2,1fr)}.filters{grid-template-columns:1fr 1fr}.row{grid-template-columns:1fr}.detail-grid{grid-template-columns:1fr 1fr}button{padding:11px 12px}}
 </style></head><body>
-<header><h1>Raw Material Yard</h1><div class="sub">V2.0.3 • Steel Marking Recognition • OCR Accuracy + ROI Coordinate Fix • QA/QC Material Yard Management & Inspection</div></header>
+<header><h1>Raw Material Yard</h1><div class="sub">V3.0 • Voice Material Identification + OCR • QA/QC Material Yard Management & Inspection</div></header>
 <main>
 <section id="home" class="view active"><div class="actions"><button onclick="show('search')">🔎 Search</button><button onclick="openScan()">📷 Scan</button><button id="btnLinkExcel" onclick="linkExcel()">🔗 Change Excel</button><button id="btnRefreshExcel" onclick="refreshExcel()">🔄 Refresh Excel</button><button id="btnDriveFolder" onclick="chooseDriveFolder()">📁 Set Google Drive Folder</button><button id="btnPublishDrive" onclick="publishToDrive()">📤 Publish to Drive</button><button id="btnRefreshMobile" onclick="refreshMobileData()">🔄 Refresh Data</button><button class="secondary" onclick="exportData()">Export</button></div>
 <div class="card" style="margin:10px 0"><b>Data Source</b><div id="syncInfo" class="muted">Checking...</div><div id="excelInfo" class="muted" style="margin-top:6px"></div><div id="modeInfo" class="muted" style="margin-top:6px"></div><div id="driveFolderInfo" class="muted" style="margin-top:6px"></div></div><div class="grid"><div class="card kpi">Materials<b id="kTotal">0</b></div><div class="card kpi">Plates<b id="kPlate">0</b></div><div class="card kpi">Weight kg<b id="kWeight">0</b></div><div class="card kpi">Pending<b id="kPending">0</b></div></div>
@@ -25,8 +25,27 @@ nav button{background:#fff;color:#17202a;border:1px solid #ddd;padding:8px 12px}
 <div class="actions"><button class="secondary" onclick="show('home')">← Home</button></div>
 <div class="card">
 <h2>Search Material</h2>
-<div class="muted">Nhập mã hoặc tải hình ảnh marking để OCR và tìm vật tư.</div>
+<div class="muted">Nhập mã, đọc bằng giọng nói hoặc tải hình ảnh marking để tìm vật tư.</div>
 <input id="q" class="search" placeholder="Plate / Heat / Coil / Material ID / PO / MTC..." oninput="renderList()">
+<div class="card voice-card" style="margin-top:10px">
+  <h3 style="margin-top:0">🎤 Đọc mã vật tư bằng giọng nói</h3>
+  <div class="muted">Không dùng OCR ảnh. Chọn loại mã, bấm micro và đọc từng số/chữ. App chuẩn hóa rồi đối chiếu Material Master.</div>
+  <div class="ocr-actions" style="margin-top:8px">
+    <label class="muted" style="display:inline-flex;align-items:center;gap:6px">Loại mã
+      <select id="voiceFieldMode" style="width:auto">
+        <option value="plate">Plate / Heat / Coil</option>
+        <option value="mtc">MTC</option>
+        <option value="general">Tự động</option>
+      </select>
+    </label>
+    <button id="voiceBtn" onclick="toggleVoiceInput()">🎤 Bắt đầu đọc</button>
+    <button class="secondary" onclick="stopVoiceInput()">⏹ Dừng</button>
+  </div>
+  <div id="voiceStatus" class="muted" style="margin-top:6px">Sẵn sàng</div>
+  <input id="voiceResult" class="search" placeholder="Kết quả đọc sẽ xuất hiện ở đây" autocomplete="off">
+  <div id="voiceMatches" style="margin-top:8px"></div>
+</div>
+
 <div class="actions">
 <button onclick="renderList()">🔍 Search</button>
 <label style="display:inline-block"><input id="imageSearch" type="file" accept="image/*" style="display:none" onchange="openOCRWorkspace(this.files[0])"><span class="btn" style="display:inline-block">🖼️ Chọn ảnh & OCR</span></label>
@@ -325,14 +344,15 @@ function moveOCRDrag(ev){if(!ocrDrag||!ocrImgEl)return;ev.preventDefault();const
 function endOCRDrag(ev){if(!ocrDrag)return;const p=canvasPoint(ev);if(ocrSelection.w<20||ocrSelection.h<10){ocrSelection={x:0,y:0,w:ocrImgEl.naturalWidth,h:ocrImgEl.naturalHeight};}ocrDrag=null;drawOCRCanvas();}
 if(ocrCanvas){ocrCanvas.addEventListener('pointerdown',beginOCRDrag);ocrCanvas.addEventListener('pointermove',moveOCRDrag);ocrCanvas.addEventListener('pointerup',endOCRDrag);ocrCanvas.addEventListener('pointercancel',endOCRDrag);}
 function ocrScaleForROI(){
-  const area=Math.max(1,ocrSelection.w*ocrSelection.h);
+  // Mobile OCR should keep the input just large enough for Tesseract.
+  // Oversized canvases make pixel preprocessing and WASM recognition slower.
   const shortSide=Math.max(1,Math.min(ocrSelection.w,ocrSelection.h));
-  if(shortSide<120) return 5;
-  if(shortSide<220) return 4;
-  if(shortSide<420) return 3;
+  if(shortSide<90) return 3.5;
+  if(shortSide<180) return 3;
+  if(shortSide<360) return 2.5;
   return 2;
 }
-function cropSelectionCanvas(preprocess='original', scaleOverride=null, padRatio=0.08){
+function cropSelectionCanvas(preprocess='original', scaleOverride=null, padRatio=0.04, fast=false){
   if(!ocrImgEl) throw new Error('Ảnh OCR chưa sẵn sàng');
   const padX=ocrSelection.w*padRatio, padY=ocrSelection.h*padRatio;
   const sx=Math.max(0,ocrSelection.x-padX), sy=Math.max(0,ocrSelection.y-padY);
@@ -340,38 +360,25 @@ function cropSelectionCanvas(preprocess='original', scaleOverride=null, padRatio
   const ey=Math.min(ocrImgEl.naturalHeight,ocrSelection.y+ocrSelection.h+padY);
   const sw=Math.max(1,ex-sx), sh=Math.max(1,ey-sy);
   const scale=scaleOverride||ocrScaleForROI();
-  const w=Math.min(3200,Math.max(300,Math.round(sw*scale))),h=Math.min(2400,Math.max(120,Math.round(sh*scale)));
+  // Mobile fast path caps the raster size aggressively. OCR accuracy is
+  // recovered by database matching rather than by huge input images.
+  const maxW=fast?1800:3200, maxH=fast?1000:2400;
+  const w=Math.min(maxW,Math.max(280,Math.round(sw*scale))),h=Math.min(maxH,Math.max(90,Math.round(sh*scale)));
   const c=document.createElement('canvas');c.width=w;c.height=h;
   const ctx=c.getContext('2d',{willReadFrequently:true});
-  ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';
+  ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality=fast?'medium':'high';
   ctx.drawImage(ocrImgEl,sx,sy,sw,sh,0,0,w,h);
+  if(preprocess==='original') return Promise.resolve(c);
   const im=ctx.getImageData(0,0,w,h),d=im.data;
   for(let i=0;i<d.length;i+=4){
-    const y=.299*d[i]+.587*d[i+1]+.114*d[i+2];
+    let y=.299*d[i]+.587*d[i+1]+.114*d[i+2];
+    if(preprocess==='contrast') y=Math.max(0,Math.min(255,(y-128)*1.65+128));
+    else if(preprocess==='threshold140') y=y>140?255:0;
+    else if(preprocess==='threshold160') y=y>160?255:0;
     d[i]=d[i+1]=d[i+2]=y;
   }
-  if(preprocess==='contrast'||preprocess==='clahe'||preprocess==='sharpen'||preprocess==='threshold110'||preprocess==='threshold140'||preprocess==='threshold170'||preprocess==='adaptive'||preprocess==='invert'){
-    const gray=new Uint8ClampedArray(w*h);for(let p=0,j=0;p<d.length;p+=4,j++)gray[j]=d[p];
-    if(preprocess==='sharpen'){
-      const out=new Uint8ClampedArray(gray);const k=[0,-1,0,-1,5,-1,0,-1,0];
-      for(let y=1;y<h-1;y++)for(let x=1;x<w-1;x++){let sum=0,ki=0;for(let yy=-1;yy<=1;yy++)for(let xx=-1;xx<=1;xx++)sum+=gray[(y+yy)*w+(x+xx)]*k[ki++];out[y*w+x]=Math.max(0,Math.min(255,sum));}
-      for(let j=0,p=0;j<out.length;j++,p+=4)d[p]=d[p+1]=d[p+2]=out[j];
-    }else if(preprocess==='adaptive'){
-      const out=new Uint8ClampedArray(gray),r=12;
-      for(let y=0;y<h;y++)for(let x=0;x<w;x++){let sum=0,cnt=0;for(let yy=Math.max(0,y-r);yy<=Math.min(h-1,y+r);yy+=2)for(let xx=Math.max(0,x-r);xx<=Math.min(w-1,x+r);xx+=2){sum+=gray[yy*w+xx];cnt++;}out[y*w+x]=gray[y*w+x]>sum/cnt-5?255:0;}
-      for(let j=0,p=0;j<out.length;j++,p+=4)d[p]=d[p+1]=d[p+2]=out[j];
-    }else if(preprocess==='contrast'||preprocess==='clahe'){
-      let min=255,max=0;for(const v of gray){if(v<min)min=v;if(v>max)max=v;}const range=Math.max(1,max-min);
-      for(let j=0,p=0;j<gray.length;j++,p+=4){let v=(gray[j]-min)*255/range;if(preprocess==='clahe')v=(v-128)*1.35+128;v=Math.max(0,Math.min(255,v));d[p]=d[p+1]=d[p+2]=v;}
-    }else if(preprocess==='invert'){
-      for(let j=0,p=0;j<gray.length;j++,p+=4){const v=255-gray[j];d[p]=d[p+1]=d[p+2]=v;}
-    }else{
-      const th=preprocess==='threshold110'?110:preprocess==='threshold170'?170:140;
-      for(let j=0,p=0;j<gray.length;j++,p+=4){const v=gray[j]>th?255:0;d[p]=d[p+1]=d[p+2]=v;}
-    }
-  }
   ctx.putImageData(im,0,0);
-  return new Promise((resolve,reject)=>c.toBlob(b=>b?resolve(b):reject(new Error('Cannot create OCR crop')),'image/png'));
+  return Promise.resolve(c);
 }
 function ocrTextTokens(text){
   const raw=normalizeOCRText(text).toUpperCase();
@@ -512,67 +519,118 @@ function applyOCRMaterial(id){
   const best=x.Plate_No||x.Heat_No||x.Coil_No||x.Material_ID||'';
   q.value=best;renderList(true);detail(id);
 }
+let ocrWorkerPromise=null;
+let ocrWorker=null;
+let ocrWorkerInitError=null;
+let ocrWorkerReadyAt=0;
+let ocrWorkerParamsKey='';
+async function getOCRWorker(){
+  if(ocrWorker)return ocrWorker;
+  if(ocrWorkerInitError)throw ocrWorkerInitError;
+  if(!ocrWorkerPromise){
+    ocrWorkerPromise=Tesseract.createWorker('eng',1,{
+      logger:m=>{
+        if(m.status==='loading tesseract core'&&m.progress)ocrBox.textContent='Đang chuẩn bị OCR • '+Math.round(m.progress*100)+'%';
+        else if(m.status==='loading language traineddata'&&m.progress)ocrBox.textContent='Đang tải OCR • '+Math.round(m.progress*100)+'%';
+        else if(m.status==='recognizing text'&&m.progress)ocrBox.textContent='OCR • '+Math.round(m.progress*100)+'%';
+      }
+    }).then(async w=>{
+      // Set stable parameters once. Re-setting parameters before every OCR
+      // costs extra worker messaging and is unnecessary for the fast path.
+      await w.setParameters({
+        tessedit_pageseg_mode:'7',
+        preserve_interword_spaces:'1',
+        user_defined_dpi:'300',
+        tessedit_char_whitelist:'0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ.-'
+      });
+      ocrWorker=w; ocrWorkerReadyAt=Date.now(); return w;
+    }).catch(e=>{ocrWorkerInitError=e;throw e});
+  }
+  return ocrWorkerPromise;
+}
+async function warmOCRWorker(){
+  if(!isMobileOCR())return;
+  try{
+    await getOCRWorker();
+    const el=document.getElementById('ocrEngineStatus');
+    if(el)el.textContent='OCR engine sẵn sàng • Mobile Ultra Fast OCR';
+  }catch(e){ /* OCR will retry on demand */ }
+}
 async function runOCRVariant(blob,label,whitelist='',psm=7){
-  const opts={
-    logger:m=>{if(m.status==='recognizing text'&&m.progress)ocrBox.textContent=label+' • OCR '+Math.round(m.progress*100)+'%'}
-  };
-  // Tesseract.js v5 accepts Tesseract parameters directly. PSM 7/8/13 are
-  // deliberately mixed because steel marking is usually one short text line.
-  opts.tessedit_pageseg_mode=String(psm);
-  opts.preserve_interword_spaces='1';
-  if(whitelist)opts.tessedit_char_whitelist=whitelist;
-  const result=await Tesseract.recognize(blob,'eng',opts);
+  const worker=await getOCRWorker();
+  const params={tessedit_pageseg_mode:String(psm),preserve_interword_spaces:'1',user_defined_dpi:'300'};
+  if(whitelist)params.tessedit_char_whitelist=whitelist;
+  const paramsKey=JSON.stringify(params);
+  if(paramsKey!==ocrWorkerParamsKey){await worker.setParameters(params);ocrWorkerParamsKey=paramsKey;}
+  const result=await worker.recognize(blob);
   return normalizeOCRText(result.data.text||'');
+}
+function isMobileOCR(){
+  return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.maxTouchPoints>1 && window.innerWidth<900);
 }
 function inferOCRWhitelist(){
   const mode=document.getElementById('ocrFieldMode')?.value||'general';
   if(mode==='plate')return '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ-';
   if(mode==='grade')return '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ.-';
+  if(mode==='general')return '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ.-';
   return '';
 }
 function bestVerifiedIdentity(matches){
   if(!matches||!matches.length)return null;
   const top=matches[0], second=matches[1];
   const margin=top.score-(second?.score||0);
-  // Do not silently choose between two adjacent plates when evidence is weak.
   if(top.score>=.78 && (margin>=.055 || top.score>=.93))return top;
   return null;
 }
 async function executeOCR(preferred='selection'){
   if(!ocrImgEl)return;
-  ocrBox.innerHTML='<b>V2.0.3 đang chạy Multi-OCR + MTC-aware Database Verification...</b>';ocrCandidates.innerHTML='';
+  const mobileFast=isMobileOCR();
+  ocrBox.innerHTML='<b>V2.0.5 • '+(mobileFast?'Mobile Ultra Fast OCR':'PC Full Accuracy OCR')+' • Database Verification...</b>';ocrCandidates.innerHTML='';
   const verify=document.getElementById('ocrVerification');if(verify)verify.style.display='none';
   try{
-    const modes=['original','contrast','sharpen','clahe','threshold110','threshold140','threshold170','adaptive','invert'];
-    const psms=[7,8,13];
+    // Mobile target: one warm-worker OCR pass. A second pass is used only
+    // when the first result cannot be verified. This replaces the previous
+    // 3-pass mobile ensemble and is the main latency reduction.
+    const modes=mobileFast?['original']:['original','contrast','sharpen','clahe','threshold110','threshold140','threshold170','adaptive','invert'];
+    const psms=mobileFast?[7]:[7,8,13];
     const texts=[];
     const whitelist=inferOCRWhitelist();
-    // For a plate/automatic marking ROI, use a tighter crop to avoid picking
-    // characters from the neighbouring marking line.
     const fieldMode=document.getElementById('ocrFieldMode')?.value||'general';
-    const pad=(fieldMode==='plate')?0.025:0.06;
+    const pad=mobileFast?0.035:((fieldMode==='plate')?0.025:0.06);
+    let verifiedEarly=null;
     for(const mode of modes){
       for(const psm of psms){
-        const b=await cropSelectionCanvas(mode,null,pad);
+        const b=await cropSelectionCanvas(mode,null,pad,mobileFast);
         const t=await runOCRVariant(b,mode.toUpperCase()+' / PSM'+psm,whitelist,psm);
         if(t)texts.push(t);
+        if(mobileFast){
+          const early=rankMaterialMatches(texts);
+          if(early[0] && early[0].score>=.88){verifiedEarly=early[0];break;}
+        }
       }
+      if(mobileFast && verifiedEarly)break;
+    }
+    // If the single fast pass is weak, use exactly one cheap contrast retry.
+    if(mobileFast && !verifiedEarly){
+      const b=await cropSelectionCanvas('contrast',null,pad,true);
+      const t=await runOCRVariant(b,'CONTRAST / PSM7',whitelist,7);
+      if(t)texts.push(t);
     }
     const cand=extractOCRCandidates(texts);
     const matches=rankMaterialMatches(texts);
-    const verified=bestVerifiedIdentity(matches);
-    // Preserve the identity field that actually matched the selected ROI.
-    // Do not force a Plate_No into the search box when the user selected an
-    // MTC/Heat/Coil marking only.
+    const verified=bestVerifiedIdentity(matches)||verifiedEarly;
     const verifiedEvidence=verified?.evidence?.find(e=>e.field===verified.bestField);
     const consensus=verifiedEvidence?.token || cand[0]?.token || normalizeOCRText(texts[0]||'');
     const combined=texts.join(' | ');
-    const prev=document.getElementById('ocrCropPreview');if(prev){const pb=await cropSelectionCanvas('original',null,pad);prev.src=URL.createObjectURL(pb);prev.style.display='block';}
+    const prev=document.getElementById('ocrCropPreview');if(prev){const pb=await cropSelectionCanvas('original',null,pad,mobileFast);prev.src=URL.createObjectURL(await canvasToBlob(pb,mobileFast?'image/jpeg':'image/png',mobileFast?.88:undefined));prev.style.display='block';}
     const verifyNote=verified?`<br><span class="muted">🎯 DB verified: ${escapeHtml(verified.x.Material_ID)} • ${Math.round(verified.score*100)}%</span>`:'';
     ocrBox.innerHTML=`<b>OCR consensus:</b> ${escapeHtml(consensus||'Không đọc được')}${verifyNote}<br><span class="muted">Raw: ${escapeHtml(combined.slice(0,900))}</span>`;
     if(consensus){q.value=consensus;renderList(true);showOCRCandidates(consensus);}
     renderOCRVerification(texts);
   }catch(e){ocrBox.textContent='OCR lỗi: '+e.message+' • Hãy chọn ROI lớn hơn hoặc chụp gần hơn.';}
+}
+function canvasToBlob(canvas,type='image/png',quality){
+  return new Promise((resolve,reject)=>canvas.toBlob(b=>b?resolve(b):reject(new Error('Cannot create OCR image')),type,quality));
 }
 function runSelectedOCR(){executeOCR('selection')}
 function runFullImageOCR(){if(!ocrImgEl)return;ocrSelection={x:0,y:0,w:ocrImgEl.naturalWidth,h:ocrImgEl.naturalHeight};drawOCRCanvas();executeOCR('full')}
@@ -582,6 +640,91 @@ function imageVariant(file,mode){return new Promise((resolve,reject)=>{const img
 async function ocrImage(file){if(!file)return;loadOCRImage(file)}
 function showOCRCandidates(text){const raw=normalizeOCRText(text);const toks=raw.toUpperCase().split(/[^A-Z0-9.-]+/).filter(t=>t.length>=3);const uniq=[...new Set(toks)].slice(0,16);ocrCandidates.innerHTML=uniq.map(t=>`<button class="chip" onclick="useOCRToken('${escapeAttr(t)}')">${escapeHtml(t)}</button>`).join('')}
 function useOCRToken(t){q.value=t;renderList(true)}
+
+// ===== V3.0 VOICE MATERIAL IDENTIFICATION =====
+let voiceRecognition=null, voiceListening=false, voiceLastTranscript='', voiceFinalTranscript='';
+const VI_DIGITS={
+  'không':'0','zero':'0','một':'1','mot':'1','mốt':'1','một.':'1','hai':'2','ba':'3','bốn':'4','bon':'4','tư':'4','tu':'4','năm':'5','nam':'5','lăm':'5','sáu':'6','sau':'6','bảy':'7','bay':'7','bẩy':'7','tám':'8','tam':'8','chín':'9','chin':'9'
+};
+const EN_DIGITS={zero:'0',oh:'0',one:'1',two:'2',three:'3',four:'4',five:'5',six:'6',seven:'7',eight:'8',nine:'9'};
+const LETTERS={
+  'a':'A','ay':'A','aay':'A','alpha':'A','b':'B','bee':'B','be':'B','c':'C','see':'C','sea':'C','cee':'C','d':'D','dee':'D','e':'E','ee':'E','f':'F','eff':'F','g':'G','gee':'G','h':'H','aitch':'H','i':'I','eye':'I','j':'J','jay':'J','k':'K','kay':'K','l':'L','el':'L','m':'M','em':'M','n':'N','en':'N','o':'O','oh':'O','p':'P','pee':'P','q':'Q','cue':'Q','r':'R','ar':'R','s':'S','ess':'S','t':'T','tee':'T','u':'U','you':'U','v':'V','vee':'V','w':'W','doubleyou':'W','x':'X','ex':'X','y':'Y','why':'Y','z':'Z','zee':'Z','zed':'Z'
+};
+function voiceSetStatus(msg,ok=false){const el=document.getElementById('voiceStatus');if(el){el.textContent=msg;el.style.color=ok?'#166534':''}}
+function normalizeVoiceText(text,mode){
+  let s=String(text||'').toLowerCase().normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').replace(/[^a-z0-9\\s.-]/g,' ').replace(/\\s+/g,' ').trim();
+  if(!s)return '';
+  // Preserve literal alphanumeric strings first.
+  const raw=s.replace(/[ .-]/g,'').toUpperCase();
+  if(mode==='plate'){
+    const toks=s.split(' '); let out='';
+    for(const t of toks){ if(VI_DIGITS[t]!=null) out+=VI_DIGITS[t]; else if(EN_DIGITS[t]!=null) out+=EN_DIGITS[t]; else if(/^\\d+$/.test(t)) out+=t; }
+    if(out.length>=4) return out;
+    return raw.replace(/[^0-9]/g,'');
+  }
+  if(mode==='mtc'){
+    const toks=s.split(' '); let out='';
+    for(let i=0;i<toks.length;i++){
+      if(toks[i]==='double' && toks[i+1]==='you'){out+='W';i++;continue;}
+      if(LETTERS[toks[i]]) out+=LETTERS[toks[i]];
+      else if(EN_DIGITS[toks[i]]!=null) out+=EN_DIGITS[toks[i]];
+      else if(VI_DIGITS[toks[i]]!=null) out+=VI_DIGITS[toks[i]];
+      else if(/^\\d+$/.test(toks[i])) out+=toks[i];
+      else if(/^[a-z0-9]+$/.test(toks[i]) && toks[i].length<=3) out+=toks[i].toUpperCase();
+    }
+    return out;
+  }
+  // General: prefer a compact alphanumeric interpretation.
+  const p=normalizeVoiceText(text,'plate');
+  if(p.length>=6)return p;
+  return normalizeVoiceText(text,'mtc');
+}
+function voiceFieldMatches(value,mode){
+  const q=String(value||'').toUpperCase().replace(/[^A-Z0-9]/g,''); if(q.length<2)return [];
+  const fields=mode==='mtc'?['MTC_No','Material_ID','Plate_No','Heat_No','Coil_No']:mode==='plate'?['Plate_No','Heat_No','Coil_No','Material_ID']:['Plate_No','Heat_No','Coil_No','MTC_No','Material_ID'];
+  const scored=[];
+  for(const x of data){
+    let best=0,bestField='';
+    for(const f of fields){const v=String(x[f]??'').toUpperCase().replace(/[^A-Z0-9]/g,'');if(!v)continue;let score=0;if(v===q)score=1;else if(v.startsWith(q))score=Math.min(.98,q.length/v.length+.35);else if(q.startsWith(v)&&v.length>=5)score=Math.min(.96,v.length/q.length+.3);else if(q.length>=5&&v.includes(q))score=.86;if(score>best){best=score;bestField=f}}
+    if(best>=.55)scored.push({x,score,field:bestField});
+  }
+  scored.sort((a,b)=>b.score-a.score); return scored.slice(0,8);
+}
+function renderVoiceMatches(value,mode){
+  const box=document.getElementById('voiceMatches'); if(!box)return; const m=voiceFieldMatches(value,mode);
+  if(!value){box.innerHTML='';return;}
+  if(!m.length){box.innerHTML='<div class="card">⚠️ Chưa tìm thấy vật tư phù hợp. Hãy đọc lại hoặc nhập trực tiếp.</div>';return;}
+  box.innerHTML=m.map((r,i)=>{const x=r.x;return `<div class="card" style="cursor:pointer;margin-top:6px" onclick="selectVoiceMaterial('${escapeAttr(String(x.Material_ID))}')"><b>${i===0?'🎯 ':''}${escapeHtml(String(x.Material_ID||''))}</b><div class="muted">${escapeHtml(String(x.Plate_No||''))} • MTC ${escapeHtml(String(x.MTC_No||''))}</div><div>${escapeHtml(String(x.Grade||''))} • ${escapeHtml(String(x.Thickness_mm??''))} × ${escapeHtml(String(x.Width_mm??''))} × ${escapeHtml(String(x.Length_mm??''))} mm</div></div>`}).join('');
+  if(m[0].score>=.98){const x=m[0].x;voiceSetStatus('✓ Exact/strong match: '+String(x.Material_ID||''),true);}
+}
+function selectVoiceMaterial(id){
+  const x=data.find(z=>String(z.Material_ID)===String(id)); if(!x)return;
+  q.value=String(x.Material_ID||''); renderList(); voiceSetStatus('✓ Đã chọn '+String(x.Material_ID||''),true);
+  const box=document.getElementById('voiceMatches'); if(box)box.innerHTML=`<div class="card" style="border:2px solid #16a34a"><b>✓ VERIFIED</b><div>${escapeHtml(String(x.Material_ID||''))} • Plate ${escapeHtml(String(x.Plate_No||''))}</div><div>MTC ${escapeHtml(String(x.MTC_No||''))} • ${escapeHtml(String(x.Grade||''))}</div></div>`;
+}
+function setupVoiceRecognition(){
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){voiceSetStatus('⚠️ Trình duyệt này không hỗ trợ Speech Recognition. Hãy dùng Chrome/Edge trên Android/PC.');return null;}
+  const r=new SR(); r.continuous=false; r.interimResults=true; r.maxAlternatives=3;
+  r.onstart=()=>{voiceListening=true;voiceFinalTranscript='';voiceLastTranscript='';voiceSetStatus('🎤 Đang nghe... hãy đọc từng số/chữ, rõ và liên tục.');const b=document.getElementById('voiceBtn');if(b)b.textContent='🔴 Đang nghe';};
+  r.onresult=(ev)=>{let interim='',final='';for(let i=ev.resultIndex;i<ev.results.length;i++){const t=ev.results[i][0].transcript;if(ev.results[i].isFinal)final+=t;else interim+=t;}voiceFinalTranscript+=final;voiceLastTranscript=voiceFinalTranscript||interim;const mode=(document.getElementById('voiceFieldMode')||{}).value||'plate';const norm=normalizeVoiceText(voiceFinalTranscript||interim,mode);const out=document.getElementById('voiceResult');if(out)out.value=norm;renderVoiceMatches(norm,mode);};
+  r.onerror=(ev)=>{voiceListening=false;voiceSetStatus('🔴 Voice error: '+ev.error+'. Bạn có thể nhập trực tiếp.');const b=document.getElementById('voiceBtn');if(b)b.textContent='🎤 Bắt đầu đọc';};
+  r.onend=()=>{voiceListening=false;const b=document.getElementById('voiceBtn');if(b)b.textContent='🎤 Bắt đầu đọc';const mode=(document.getElementById('voiceFieldMode')||{}).value||'plate';const val=document.getElementById('voiceResult')?.value||'';if(val){renderVoiceMatches(val,mode);voiceSetStatus('✓ Đã nhận: '+val,true);}};
+  return r;
+}
+function toggleVoiceInput(){
+  if(voiceListening){stopVoiceInput();return;}
+  if(!voiceRecognition)voiceRecognition=setupVoiceRecognition(); if(!voiceRecognition)return;
+  const mode=(document.getElementById('voiceFieldMode')||{}).value||'plate';
+  voiceRecognition.lang=mode==='mtc'?'en-US':'vi-VN';
+  try{voiceRecognition.start();}catch(e){voiceSetStatus('⚠️ Micro đang bận. Hãy bấm Dừng rồi thử lại.');}
+}
+function stopVoiceInput(){try{if(voiceRecognition&&voiceListening)voiceRecognition.stop();}catch(e){} voiceListening=false;const b=document.getElementById('voiceBtn');if(b)b.textContent='🎤 Bắt đầu đọc';}
+function initVoiceUI(){
+  const inp=document.getElementById('voiceResult'); if(inp)inp.addEventListener('input',()=>{const mode=document.getElementById('voiceFieldMode')?.value||'plate';inp.value=inp.value.toUpperCase().replace(/[^A-Z0-9]/g,'');renderVoiceMatches(inp.value,mode);});
+  const sel=document.getElementById('voiceFieldMode'); if(sel)sel.addEventListener('change',()=>{const mode=sel.value;if(mode==='mtc')voiceSetStatus('MTC: đọc từng chữ và số, ví dụ J T 4 Z 1 2 1.');else if(mode==='plate')voiceSetStatus('Plate/Heat: đọc từng số, ví dụ hai sáu năm ba không không...');else voiceSetStatus('Tự động: app sẽ thử nhận dạng số hoặc mã chữ-số.');});
+}
+
 function clearSearch(){q.value='';ocrBox.textContent='';ocrCandidates.innerHTML='';closeOCRWorkspace();renderList()}
 function rerunOCR(){if(ocrImgEl)runSelectedOCR();else{const inp=document.getElementById('imageSearch');if(inp&&inp.files&&inp.files[0])ocrImage(inp.files[0]);else alert('Hãy chọn ảnh marking trước.')}}
 function escapeAttr(s){return String(s||'').replace(/&/g,'&amp;').replace(/'/g,'&#39;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
@@ -785,6 +928,14 @@ function setupModeUI(){
   if(IS_MOBILE_MODE && !GOOGLE_SYNC_URL){showSyncStatus('🟠 Chưa cấu hình Google Drive Sync • đang dùng cache/fallback','new');}
 }
 setupModeUI();
+initVoiceUI();
 init();
+// Pre-warm Tesseract on mobile during idle time so the user's first OCR tap
+// does not pay the WASM/language initialization cost. The engine stays in memory.
+if(isMobileOCR()){
+  const warm=()=>warmOCRWorker();
+  if('requestIdleCallback' in window) requestIdleCallback(warm,{timeout:1500});
+  else setTimeout(warm,1200);
+}
 if(!IS_LOCAL_FILE && 'serviceWorker'in navigator)navigator.serviceWorker.register('sw.js');
 </script></body></html>
