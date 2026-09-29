@@ -16,7 +16,7 @@ select,input,textarea{padding:11px;border:1px solid #cbd5e1;border-radius:10px;w
 nav{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid #ddd;display:flex;justify-content:center;gap:8px;padding:8px;z-index:6}
 nav button{background:#fff;color:#17202a;border:1px solid #ddd;padding:8px 12px}.btn{display:inline-block;padding:11px 14px;border-radius:10px;background:#0f172a;color:#fff;cursor:pointer}.ocr-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.chip{border:1px solid #cbd5e1;background:#fff;color:#17202a;border-radius:999px;padding:7px 10px;font-size:12px;cursor:pointer}.match{font-size:11px;padding:3px 7px;border-radius:999px;background:#dcfce7;color:#166534}.warn{background:#fef3c7;color:#92400e}.detail-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.kv{background:#f8fafc;border-radius:10px;padding:9px}.kv b{display:block;font-size:11px;color:#64748b;margin-bottom:3px}.camera-frame{width:100%;max-height:52vh;object-fit:cover;background:#111;border-radius:12px}.ocr-workspace{background:#0f172a;border-radius:14px;padding:8px;touch-action:none;user-select:none}.ocr-canvas{display:block;width:100%;height:auto;border-radius:10px;background:#111;touch-action:none}.ocr-toolbar{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.ocr-stat{font-size:12px;color:#cbd5e1}.ocr-preview{width:100%;max-height:220px;object-fit:contain;background:#111;border-radius:10px;margin-top:8px}.preset{background:#e2e8f0;color:#17202a}.preset.active{background:#0f172a;color:#fff}@media(max-width:700px){.grid{grid-template-columns:repeat(2,1fr)}.filters{grid-template-columns:1fr 1fr}.row{grid-template-columns:1fr}.detail-grid{grid-template-columns:1fr 1fr}button{padding:11px 12px}}
 </style></head><body>
-<header><h1>Raw Material Yard</h1><div class="sub">V2.0 • Steel Marking Recognition • QA/QC Material Yard Management & Inspection</div></header>
+<header><h1>Raw Material Yard</h1><div class="sub">V2.0.1 • Steel Marking Recognition • ROI Coordinate Fix • QA/QC Material Yard Management & Inspection</div></header>
 <main>
 <section id="home" class="view active"><div class="actions"><button onclick="show('search')">🔎 Search</button><button onclick="openScan()">📷 Scan</button><button id="btnLinkExcel" onclick="linkExcel()">🔗 Change Excel</button><button id="btnRefreshExcel" onclick="refreshExcel()">🔄 Refresh Excel</button><button id="btnDriveFolder" onclick="chooseDriveFolder()">📁 Set Google Drive Folder</button><button id="btnPublishDrive" onclick="publishToDrive()">📤 Publish to Drive</button><button id="btnRefreshMobile" onclick="refreshMobileData()">🔄 Refresh Data</button><button class="secondary" onclick="exportData()">Export</button></div>
 <div class="card" style="margin:10px 0"><b>Data Source</b><div id="syncInfo" class="muted">Checking...</div><div id="excelInfo" class="muted" style="margin-top:6px"></div><div id="modeInfo" class="muted" style="margin-top:6px"></div><div id="driveFolderInfo" class="muted" style="margin-top:6px"></div></div><div class="grid"><div class="card kpi">Materials<b id="kTotal">0</b></div><div class="card kpi">Plates<b id="kPlate">0</b></div><div class="card kpi">Weight kg<b id="kWeight">0</b></div><div class="card kpi">Pending<b id="kPending">0</b></div></div>
@@ -36,7 +36,7 @@ nav button{background:#fff;color:#17202a;border:1px solid #ddd;padding:8px 12px}
 <div id="ocrBox" class="muted"></div><div id="ocrCandidates" class="ocr-actions"></div>
 <div id="ocrWorkspace" class="card" style="display:none;margin-top:10px">
   <h3 style="margin-top:0">🎯 Chọn vị trí OCR</h3>
-  <div class="muted">Kéo ngón tay/chuột trên ảnh để khoanh đúng vùng marking. Vùng chọn sẽ được phóng to trước khi OCR.</div>
+  <div class="muted">Kéo ngón tay/chuột trên ảnh để khoanh đúng vùng marking. Tọa độ được quy đổi theo kích thước ảnh gốc, nên vùng chọn bám đúng vị trí click. Vùng chọn sẽ được phóng to trước khi OCR.</div>
   <div class="ocr-actions"><label class="muted" style="display:inline-flex;align-items:center;gap:6px">Loại marking <select id="ocrFieldMode" style="width:auto"><option value="general">Tự động</option><option value="plate">Plate / Coil / Heat No.</option><option value="grade">Grade / Spec</option></select></label></div>
   <div class="ocr-actions">
     <button class="preset active" id="ocrPresetCustom" onclick="setOCRPreset('custom')">✋ Tùy chọn</button>
@@ -303,7 +303,22 @@ function loadOCRImage(file){
   ocrImgEl.onerror=()=>{alert('Không đọc được ảnh OCR.');};
   ocrImgEl.src=ocrObjectURL;
 }
-function canvasPoint(ev){const r=ocrCanvas.getBoundingClientRect();const sx=ocrImgEl.naturalWidth/ocrCanvas.width,sy=ocrImgEl.naturalHeight/ocrCanvas.height;return {x:clamp((ev.clientX-r.left)*sx,0,ocrImgEl.naturalWidth),y:clamp((ev.clientY-r.top)*sy,0,ocrImgEl.naturalHeight)};}
+function canvasPoint(ev){
+  if(!ocrImgEl)return {x:0,y:0};
+  const r=ocrCanvas.getBoundingClientRect();
+  // IMPORTANT: convert from the ACTUAL displayed canvas size (CSS pixels)
+  // to the source image's natural pixel coordinates.
+  // Using ocrCanvas.width/height here is wrong when the canvas is resized
+  // by CSS (for example 1600px internal width displayed at 390px on mobile).
+  const displayW=Math.max(1,r.width);
+  const displayH=Math.max(1,r.height);
+  const sx=ocrImgEl.naturalWidth/displayW;
+  const sy=ocrImgEl.naturalHeight/displayH;
+  return {
+    x:clamp((ev.clientX-r.left)*sx,0,ocrImgEl.naturalWidth),
+    y:clamp((ev.clientY-r.top)*sy,0,ocrImgEl.naturalHeight)
+  };
+}
 function drawOCRCanvas(){if(!ocrCtx||!ocrImgEl)return;const cw=ocrCanvas.width,ch=ocrCanvas.height;ocrCtx.clearRect(0,0,cw,ch);ocrCtx.drawImage(ocrImgEl,0,0,cw,ch);const sx=cw/ocrImgEl.naturalWidth,sy=ch/ocrImgEl.naturalHeight;const r={x:ocrSelection.x*sx,y:ocrSelection.y*sy,w:ocrSelection.w*sx,h:ocrSelection.h*sy};ocrCtx.fillStyle='rgba(0,0,0,.48)';ocrCtx.fillRect(0,0,cw,ch);ocrCtx.clearRect(r.x,r.y,r.w,r.h);ocrCtx.drawImage(ocrImgEl,ocrSelection.x,ocrSelection.y,ocrSelection.w,ocrSelection.h,r.x,r.y,r.w,r.h);ocrCtx.strokeStyle='#22c55e';ocrCtx.lineWidth=Math.max(3,cw/500);ocrCtx.strokeRect(r.x,r.y,r.w,r.h);ocrCtx.fillStyle='#22c55e';ocrCtx.fillRect(r.x,r.y,Math.min(r.w,110),28);ocrCtx.fillStyle='#fff';ocrCtx.font='bold 14px Arial';ocrCtx.fillText('OCR AREA',r.x+8,r.y+19);document.getElementById('ocrStat').textContent=`Vùng: ${Math.round(ocrSelection.w)} × ${Math.round(ocrSelection.h)} px • kéo để chọn vị trí`;}
 function beginOCRDrag(ev){if(!ocrImgEl)return;ev.preventDefault();ocrDrag=canvasPoint(ev);ocrSelection={x:ocrDrag.x,y:ocrDrag.y,w:0,h:0};ocrCanvas.setPointerCapture?.(ev.pointerId);}
 function moveOCRDrag(ev){if(!ocrDrag||!ocrImgEl)return;ev.preventDefault();const p=canvasPoint(ev);const x=Math.min(ocrDrag.x,p.x),y=Math.min(ocrDrag.y,p.y),w=Math.abs(p.x-ocrDrag.x),h=Math.abs(p.y-ocrDrag.y);ocrSelection={x,y,w,h};drawOCRCanvas();}
