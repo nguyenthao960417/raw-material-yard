@@ -1,5 +1,5 @@
 <!doctype html><html lang="vi"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1"><title>Raw Material Yard V1.8</title>
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>Raw Material Yard V1.9 Mobile</title>
 <link rel="manifest" href="manifest.json">
 <style>
 *{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:#f4f6f8;color:#17202a}
@@ -14,9 +14,9 @@ select,input,textarea{padding:11px;border:1px solid #cbd5e1;border-radius:10px;w
 .item .top{display:flex;justify-content:space-between}.muted{color:#64748b;font-size:12px}.badge{display:inline-block;padding:4px 8px;border-radius:999px;background:#e2e8f0;font-size:11px}
 .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}.check{display:grid;grid-template-columns:1fr 110px;gap:8px;align-items:center;margin:8px 0}
 nav{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid #ddd;display:flex;justify-content:center;gap:8px;padding:8px;z-index:6}
-nav button{background:#fff;color:#17202a;border:1px solid #ddd;padding:8px 12px}@media(max-width:700px){.grid{grid-template-columns:repeat(2,1fr)}.filters{grid-template-columns:1fr 1fr}.row{grid-template-columns:1fr}}
+nav button{background:#fff;color:#17202a;border:1px solid #ddd;padding:8px 12px}.btn{display:inline-block;padding:11px 14px;border-radius:10px;background:#0f172a;color:#fff;cursor:pointer}.ocr-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.chip{border:1px solid #cbd5e1;background:#fff;color:#17202a;border-radius:999px;padding:7px 10px;font-size:12px;cursor:pointer}.match{font-size:11px;padding:3px 7px;border-radius:999px;background:#dcfce7;color:#166534}.warn{background:#fef3c7;color:#92400e}.detail-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.kv{background:#f8fafc;border-radius:10px;padding:9px}.kv b{display:block;font-size:11px;color:#64748b;margin-bottom:3px}.camera-frame{width:100%;max-height:52vh;object-fit:cover;background:#111;border-radius:12px}@media(max-width:700px){.grid{grid-template-columns:repeat(2,1fr)}.filters{grid-template-columns:1fr 1fr}.row{grid-template-columns:1fr}.detail-grid{grid-template-columns:1fr 1fr}button{padding:11px 12px}}
 </style></head><body>
-<header><h1>Raw Material Yard</h1><div class="sub">V1.8 • PC + Mobile Field • QA/QC Material Yard Management & Inspection</div></header>
+<header><h1>Raw Material Yard</h1><div class="sub">V1.9 • Mobile Field • QA/QC Material Yard Management & Inspection</div></header>
 <main>
 <section id="home" class="view active"><div class="actions"><button onclick="show('search')">🔎 Search</button><button onclick="openScan()">📷 Scan</button><button id="btnLinkExcel" onclick="linkExcel()">🔗 Change Excel</button><button id="btnRefreshExcel" onclick="refreshExcel()">🔄 Refresh Excel</button><button id="btnDriveFolder" onclick="chooseDriveFolder()">📁 Set Google Drive Folder</button><button id="btnPublishDrive" onclick="publishToDrive()">📤 Publish to Drive</button><button id="btnRefreshMobile" onclick="refreshMobileData()">🔄 Refresh Data</button><button class="secondary" onclick="exportData()">Export</button></div>
 <div class="card" style="margin:10px 0"><b>Data Source</b><div id="syncInfo" class="muted">Checking...</div><div id="excelInfo" class="muted" style="margin-top:6px"></div><div id="modeInfo" class="muted" style="margin-top:6px"></div><div id="driveFolderInfo" class="muted" style="margin-top:6px"></div></div><div class="grid"><div class="card kpi">Materials<b id="kTotal">0</b></div><div class="card kpi">Plates<b id="kPlate">0</b></div><div class="card kpi">Weight kg<b id="kWeight">0</b></div><div class="card kpi">Pending<b id="kPending">0</b></div></div>
@@ -31,7 +31,7 @@ nav button{background:#fff;color:#17202a;border:1px solid #ddd;padding:8px 12px}
 <button onclick="renderList()">🔍 Search</button>
 <label style="display:inline-block"><input id="imageSearch" type="file" accept="image/*" style="display:none" onchange="ocrImage(this.files[0])"><span class="btn" style="display:inline-block">🖼️ Tải hình ảnh</span></label>
 </div>
-<div id="ocrBox" class="muted"></div>
+<div class="ocr-actions"><button class="secondary" onclick="clearSearch()">✕ Clear</button><button class="secondary" onclick="rerunOCR()">🔁 OCR lại</button></div><div id="ocrBox" class="muted"></div><div id="ocrCandidates" class="ocr-actions"></div>
 </div>
 <div class="filters">
 <select id="fProject" onchange="renderList()"><option value="">All projects</option></select>
@@ -46,8 +46,8 @@ nav button{background:#fff;color:#17202a;border:1px solid #ddd;padding:8px 12px}
 <div class="actions"><button class="secondary" onclick="show('search')">← Search</button></div>
 <div class="card">
 <h2>Scan</h2>
-<div class="muted">Dùng camera để đọc QR/barcode. Nếu marking không có mã, chụp hình rồi dùng Search → Tải hình ảnh để OCR.</div>
-<video id="scanVideo" autoplay playsinline style="width:100%;border-radius:12px;background:#111;margin:10px 0"></video>
+<div class="muted">Quét QR/barcode bằng camera. Với marking chữ/số, dùng Capture để OCR và tự tìm vật tư gần đúng.</div>
+<video id="scanVideo" class="camera-frame" autoplay playsinline></video>
 <div class="actions">
 <button onclick="startScan()">▶ Start Camera</button>
 <button class="secondary" onclick="stopScan()">■ Stop</button>
@@ -61,7 +61,7 @@ nav button{background:#fff;color:#17202a;border:1px solid #ddd;padding:8px 12px}
 </main><nav><button onclick="show('home')">Home</button><button onclick="show('search')">Search</button><button onclick="current&&detail(current)">Material</button><button onclick="current&&inspect(current)">Check</button></nav>
 <script src="config.js"></script><script src="local_data.js"></script>
 <script>
-// V1.6 PC + Mobile: no BAT/PowerShell/Python. Link once, then Refresh Excel to reload the linked workbook.
+// V1.9 PC + Mobile: no BAT/PowerShell/Python. Link once, then Refresh Excel to reload the linked workbook.
 const IS_MOBILE_MODE = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.maxTouchPoints>1 && window.innerWidth<900);
 const GOOGLE_SYNC_URL = window.RM_GOOGLE_SYNC_URL || '';
 const V17_DRIVE_DB='rm_yard_v17_drive';
@@ -246,25 +246,26 @@ function captureScanImage(){
   c.getContext('2d').drawImage(v,0,0,c.width,c.height);
   c.toBlob(blob=>ocrImage(blob),'image/jpeg',0.92);
 }
-async function ocrImage(file){
-  if(!file)return;
-  ocrBox.innerHTML='<b>OCR đang đọc hình ảnh...</b> Không đóng màn hình.';
-  try{
-    const result=await Tesseract.recognize(file,'eng',{
-      logger:m=>{
-        if(m.status==='recognizing text' && m.progress) ocrBox.textContent='OCR: '+Math.round(m.progress*100)+'%';
-      }
-    });
-    const text=(result.data.text||'').replace(/\s+/g,' ').trim();
-    ocrBox.innerHTML='<b>OCR:</b> '+escapeHtml(text||'Không đọc được text');
-    if(text){
-      q.value=text;
-      renderList(true);
-    }
-  }catch(e){
-    ocrBox.textContent='OCR lỗi. Bạn có thể nhập mã bằng tay.';
-  }
+function normalizeOCRText(s){
+  return String(s||'').normalize('NFKC').replace(/[“”‘’]/g,'"').replace(/[|¦]/g,'I').replace(/[—–−]/g,'-').replace(/[^\w\-./#×x ]+/g,' ').replace(/\s+/g,' ').trim();
 }
+function ocrCompact(s){return normalizeOCRText(s).toUpperCase().replace(/[^A-Z0-9]/g,'')}
+function levenshtein(a,b){a=String(a);b=String(b);if(a===b)return 0;if(!a)return b.length;if(!b)return a.length;let prev=Array.from({length:b.length+1},(_,i)=>i);for(let i=1;i<=a.length;i++){let cur=[i];for(let j=1;j<=b.length;j++)cur[j]=Math.min(cur[j-1]+1,prev[j]+1,prev[j-1]+(a[i-1]===b[j-1]?0:1));prev=cur}return prev[b.length]}
+function similarity(a,b){a=ocrCompact(a);b=ocrCompact(b);if(!a||!b)return 0;if(a===b)return 1;if(a.includes(b)||b.includes(a))return Math.min(a.length,b.length)/Math.max(a.length,b.length)*0.95;return Math.max(0,1-levenshtein(a,b)/Math.max(a.length,b.length))}
+function imageVariant(file,mode){return new Promise((resolve,reject)=>{const img=new Image();const url=URL.createObjectURL(file);img.onload=()=>{const maxW=1800,scale=Math.min(1,maxW/img.naturalWidth),w=Math.max(1,Math.round(img.naturalWidth*scale)),h=Math.max(1,Math.round(img.naturalHeight*scale));const c=document.createElement('canvas');c.width=w;c.height=h;const ctx=c.getContext('2d',{willReadFrequently:true});ctx.drawImage(img,0,0,w,h);if(mode!=='original'){const im=ctx.getImageData(0,0,w,h),d=im.data;for(let i=0;i<d.length;i+=4){let y=0.299*d[i]+0.587*d[i+1]+0.114*d[i+2];if(mode==='threshold')y=y>150?255:0;else if(mode==='contrast')y=Math.max(0,Math.min(255,(y-128)*1.8+128));d[i]=d[i+1]=d[i+2]=y}ctx.putImageData(im,0,0)}c.toBlob(b=>{URL.revokeObjectURL(url);b?resolve(b):reject(new Error('Cannot create image'))},'image/jpeg',0.92)};img.onerror=()=>{URL.revokeObjectURL(url);reject(new Error('Cannot read image'))};img.src=url})}
+async function runOCRVariant(blob,label){const result=await Tesseract.recognize(blob,'eng',{logger:m=>{if(m.status==='recognizing text'&&m.progress)ocrBox.textContent=label+' • OCR '+Math.round(m.progress*100)+'%'}});return normalizeOCRText(result.data.text||'')}
+async function ocrImage(file){
+  if(!file)return;ocrBox.innerHTML='<b>OCR đang đọc...</b> Chuẩn hóa ảnh + thử nhiều chế độ.';ocrCandidates.innerHTML='';
+  try{const variants=['original','contrast','threshold'];const texts=[];for(const mode of variants){const b=await imageVariant(file,mode);const t=await runOCRVariant(b,mode==='original'?'Ảnh gốc':mode==='contrast'?'Tăng tương phản':'Nhị phân');if(t)texts.push(t)}
+    const unique=[...new Set(texts)].sort((a,b)=>ocrCompact(b).length-ocrCompact(a).length);const text=unique[0]||'';ocrBox.innerHTML='<b>OCR:</b> '+escapeHtml(text||'Không đọc được text');
+    if(text){q.value=text;renderList(true);showOCRCandidates(text)}
+  }catch(e){ocrBox.textContent='OCR lỗi: '+e.message+' • Bạn có thể nhập mã bằng tay.'}
+}
+function showOCRCandidates(text){const raw=normalizeOCRText(text);const toks=raw.toUpperCase().split(/[^A-Z0-9.-]+/).filter(t=>t.length>=3);const uniq=[...new Set(toks)].slice(0,12);ocrCandidates.innerHTML=uniq.map(t=>`<button class="chip" onclick="useOCRToken('${escapeAttr(t)}')">${escapeHtml(t)}</button>`).join('')}
+function useOCRToken(t){q.value=t;renderList(true)}
+function clearSearch(){q.value='';ocrBox.textContent='';ocrCandidates.innerHTML='';renderList()}
+function rerunOCR(){const inp=document.getElementById('imageSearch');if(inp&&inp.files&&inp.files[0])ocrImage(inp.files[0]);else alert('Hãy chọn ảnh marking trước.')}
+function escapeAttr(s){return String(s||'').replace(/&/g,'&amp;').replace(/'/g,'&#39;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
 function escapeHtml(s){
   return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
 }
@@ -389,7 +390,7 @@ async function init(){
   try{
     // Mobile: load cached master first, then try network refresh.
     if(IS_MOBILE_MODE){
-      document.getElementById('modeInfo').textContent='📱 Mobile Field • Google Drive Sync + Offline Cache';
+      document.getElementById('modeInfo').textContent='📱 Mobile Field • Google Drive Sync • Offline Cache • OCR';
       const savedMobile=localStorage.rm_mobile_data;
       if(savedMobile){
         masterData=JSON.parse(savedMobile);data=applyFieldOverrides(masterData);localDataVersion=localStorage.rm_data_version||'MOBILE-CACHE';initFiltersOnly();renderHome();renderList();showSyncStatus('🟢 Offline cache • '+data.length+' materials');
@@ -428,10 +429,10 @@ async function init(){
   }
 }
 
-function card(x){return `<div class="item" onclick="detail('${x.Material_ID}')"><div class="top"><b>${x.Material_ID}</b><span class="badge">${x.Material_Status||''}</span></div><div>${x.Plate_No||'-'} • ${x.Heat_No||'-'} • ${x.Coil_No||'-'}</div><div class="muted">${x.Grade||''} • ${x.Thickness_mm||''} × ${x.Width_mm||''} × ${x.Length_mm||''} mm • ${x.Weight_Kg||0} kg</div></div>`}
-function renderHome(){if(document.getElementById('syncInfo'))document.getElementById('syncInfo').textContent=(localDataVersion||'Not loaded')+' • '+data.length+' materials';kTotal.textContent=data.length;kPlate.textContent=data.filter(x=>x.Plate_No).length;kWeight.textContent=Math.round(data.reduce((a,x)=>a+(+x.Weight_Kg||0),0)).toLocaleString();kPending.textContent=data.filter(x=>(x.Material_Status||'').toUpperCase()==='PENDING').length;recent.innerHTML=data.slice(-8).reverse().map(card).join('')}
-function renderList(fromOCR=false){let raw=(document.getElementById('q').value||'').trim().toLowerCase(),tokens=raw.split(/[^a-z0-9.-]+/i).filter(t=>t.length>=3),fp=fProject.value,fg=fGrade.value,fs=fStatus.value,fy=fYard.value;let a=data.filter(x=>{if(!raw)return true;let blob=['Material_ID','Plate_No','Heat_No','Coil_No','PO_ID','MTC_No','Grade','Thickness_mm','Width_mm','Length_mm'].map(k=>String(x[k]??'').toLowerCase()).join(' ');return tokens.length?tokens.every(t=>blob.includes(t)):blob.includes(raw)}).filter(x=>!fp||x.Project_Code==fp).filter(x=>!fg||x.Grade==fg).filter(x=>!fs||x.Material_Status==fs).filter(x=>!fy||x.Yard_ID==fy);list.innerHTML=a.slice(0,300).map(card).join('')||'<div class="card"><b>No exact result.</b><br><span class="muted">Kiểm tra Plate/Heat/Coil hoặc bỏ bớt từ OCR rồi Search lại.</span></div>'}
-function detail(id){current=id;let x=data.find(z=>z.Material_ID===id);detailBody.innerHTML=`<div class="actions"><button class="secondary" onclick="show('search')">← Search</button><button onclick="inspect('${id}')">✓ Check</button><button onclick="takePhoto('${id}')">📷 Photo</button><button onclick="updateMat('${id}')">✎ Update</button></div><div class="card"><h2>${x.Material_ID}</h2><span class="badge">${x.Material_Status||''}</span><p><b>Plate:</b> ${x.Plate_No||'-'}<br><b>Heat:</b> ${x.Heat_No||'-'}<br><b>Coil:</b> ${x.Coil_No||'-'}</p><p><b>Grade:</b> ${x.Grade||'-'}<br><b>Size:</b> ${x.Thickness_mm||'-'} × ${x.Width_mm||'-'} × ${x.Length_mm||'-'} mm<br><b>Qty:</b> ${x.Qty_Pcs||0} pcs<br><b>Weight:</b> ${x.Weight_Kg||0} kg</p><p><b>Project:</b> ${x.Project_Code||'-'}<br><b>PO:</b> ${x.PO_ID||'-'}<br><b>Yard:</b> ${x.Yard_ID||'-'}<br><b>Manufacturer:</b> ${x.Manufacturer||'-'}<br><b>MTC:</b> ${x.MTC_No||'-'}</p></div><div class="card"><b>History</b>${hist.filter(h=>h.Material_ID===id).slice(-10).reverse().map(h=>`<p class="muted">${h.Updated_Date} • ${h.Field_Name}: ${h.Old_Value} → ${h.New_Value}</p>`).join('')||'<p class="muted">No updates</p>'}</div>`;show('detail')}
+function card(x,match){return `<div class="item" onclick="detail('${escapeAttr(x.Material_ID)}')"><div class="top"><b>${escapeHtml(x.Material_ID)}</b><span>${match!=null?`<span class="match">Match ${Math.round(match*100)}%</span> `:''}<span class="badge">${escapeHtml(x.Material_Status||'')}</span></span></div><div>${escapeHtml(x.Plate_No||'-')} • ${escapeHtml(x.Heat_No||'-')} • ${escapeHtml(x.Coil_No||'-')}</div><div class="muted">${escapeHtml(x.Grade||'')} • ${escapeHtml(x.Thickness_mm||'')} × ${escapeHtml(x.Width_mm||'')} × ${escapeHtml(x.Length_mm||'')} mm • ${escapeHtml(x.Weight_Kg||0)} kg</div></div>`}
+function searchScore(x,raw,tokens){const fields=['Material_ID','Plate_No','Heat_No','Coil_No','PO_ID','MTC_No','Grade','Thickness_mm','Width_mm','Length_mm','Project_Code','Project_No','Manufacturer'];const vals=fields.map(k=>String(x[k]??''));const joined=vals.join(' ').toUpperCase();let score=0,hit=0;const rr=ocrCompact(raw);if(rr&&ocrCompact(joined).includes(rr))score+=1.0;for(const t of tokens){const tc=ocrCompact(t);if(!tc)continue;let best=0;for(const v of vals){const vc=ocrCompact(v);if(!vc)continue;if(vc.includes(tc)||tc.includes(vc))best=Math.max(best,Math.min(tc.length,vc.length)/Math.max(tc.length,vc.length)*0.98);else if(tc.length>=4&&vc.length>=4)best=Math.max(best,similarity(tc,vc));}if(best>=0.55){hit++;score+=best}}return tokens.length?score/(tokens.length+1):score}
+function renderList(fromOCR=false){const raw=(document.getElementById('q').value||'').trim(),tokens=raw.toUpperCase().split(/[^A-Z0-9.-]+/).filter(t=>t.length>=2),fp=fProject.value,fg=fGrade.value,fs=fStatus.value,fy=fYard.value;let base=data.filter(x=>!fp||x.Project_Code==fp).filter(x=>!fg||x.Grade==fg).filter(x=>!fs||x.Material_Status==fs).filter(x=>!fy||x.Yard_ID==fy);if(!raw){list.innerHTML=base.slice(0,300).map(x=>card(x)).join('')||'<div class="card">No data.</div>';return}const exact=base.filter(x=>{const blob=['Material_ID','Plate_No','Heat_No','Coil_No','PO_ID','MTC_No','Grade','Thickness_mm','Width_mm','Length_mm','Project_Code','Project_No','Manufacturer'].map(k=>String(x[k]??'').toUpperCase()).join(' ');return tokens.length?tokens.every(t=>blob.includes(t)):blob.includes(raw.toUpperCase())});if(exact.length){list.innerHTML=exact.slice(0,300).map(x=>card(x)).join('');return}const ranked=base.map(x=>({x,s:searchScore(x,raw,tokens)})).filter(z=>z.s>=0.35).sort((a,b)=>b.s-a.s).slice(0,30);list.innerHTML=ranked.length?`<div class="card"><b>${fromOCR?'🔎 OCR gần đúng':'🔎 Kết quả gần đúng'}</b><div class="muted">Không có exact match. Hiển thị các vật tư có mức tương đồng cao nhất.</div></div>`+ranked.map(z=>card(z.x,z.s)).join(''):'<div class="card"><b>Không tìm thấy vật tư.</b><br><span class="muted">Thử Plate / Heat / Coil / Material ID hoặc bấm một mã OCR ở phía trên.</span></div>'}
+function detail(id){current=id;let x=data.find(z=>z.Material_ID===id);if(!x)return;const fields=[['Material ID',x.Material_ID],['Status',x.Material_Status],['Plate No.',x.Plate_No],['Heat No.',x.Heat_No],['Coil No.',x.Coil_No],['Grade',x.Grade],['Specification',x.Material_Specification],['Size',`${x.Thickness_mm||'-'} × ${x.Width_mm||'-'} × ${x.Length_mm||'-'} mm`],['Qty',x.Qty_Pcs],['Weight kg',x.Weight_Kg],['Project',x.Project_Code],['Project No.',x.Project_No],['PO',x.PO_ID],['Yard',x.Yard_ID],['Manufacturer',x.Manufacturer],['MTC',x.MTC_No],['MRIR',x.MRIR_No],['Inspection Date',x.Inspection_Date],['Remark',x.Remark]];detailBody.innerHTML=`<div class="actions"><button class="secondary" onclick="show('search')">← Search</button><button onclick="inspect('${escapeAttr(id)}')">✓ Check</button><button onclick="takePhoto('${escapeAttr(id)}')">📷 Photo</button><button onclick="updateMat('${escapeAttr(id)}')">✎ Update</button></div><div class="card"><h2>${escapeHtml(x.Material_ID)}</h2><span class="badge">${escapeHtml(x.Material_Status||'')}</span><div class="detail-grid" style="margin-top:10px">${fields.map(([k,v])=>`<div class="kv"><b>${escapeHtml(k)}</b>${escapeHtml(v==null||v===''?'-':v)}</div>`).join('')}</div></div><div class="card"><b>Inspection / Update History</b>${hist.filter(h=>h.Material_ID===id).slice(-15).reverse().map(h=>`<p class="muted">${escapeHtml(h.Updated_Date||'')} • ${escapeHtml(h.Field_Name||h.Action||'')} : ${escapeHtml(h.Old_Value||'')} → ${escapeHtml(h.New_Value||'')}</p>`).join('')||'<p class="muted">No local updates</p>'}</div>`;show('detail')}
 function inspect(id){current=id;let fs=['Marking','Grade','Thickness','Width','Length','Surface','Quantity','MTC'];inspectBody.innerHTML=`<div class="actions"><button class="secondary" onclick="detail('${id}')">← Material</button></div><div class="card"><h2>Material Check</h2>${fs.map(f=>`<div class="check"><b>${f}</b><select id="r_${f}"><option>PASS</option><option>HOLD</option><option>FAIL</option><option>N/A</option></select></div>`).join('')}<textarea id="remark" placeholder="Remark (required for HOLD/FAIL)"></textarea><button onclick="saveInspection('${id}')">Save Inspection</button></div>`;show('inspect')}
 function saveInspection(id){let fs=['Marking','Grade','Thickness','Width','Length','Surface','Quantity','MTC'],v=fs.map(f=>document.getElementById('r_'+f).value),o=v.includes('FAIL')?'REJECTED':v.includes('HOLD')?'HOLD':'ACCEPTED',r=remark.value;if((o==='HOLD'||o==='REJECTED')&&!r.trim())return alert('Remark is required');let rec={Inspection_ID:'INS-'+Date.now(),Material_ID:id,Inspection_Date:new Date().toISOString(),Overall_Result:o,Remark:r};fs.forEach((f,i)=>rec[f+'_Result']=v[i]);inspections.push(rec);localStorage.rm_inspections=JSON.stringify(inspections);let x=data.find(z=>z.Material_ID===id),old=x.Material_Status,newStatus=o==='ACCEPTED'?'AVAILABLE':o; x.Material_Status=newStatus; const ov=getFieldOverrides(); ov[id]=Object.assign({},ov[id]||{},{Material_Status:newStatus,Remark:r}); saveFieldOverrides(ov); hist.push({History_ID:'HIS-'+Date.now(),Material_ID:id,Action:'INSPECTION',Field_Name:'Material_Status',Old_Value:old,New_Value:newStatus,Updated_By:'Field User',Updated_Date:new Date().toISOString(),Remark:r});localStorage.rm_history=JSON.stringify(hist);localStorage.rm_material_data=JSON.stringify(data);alert('Inspection saved');detail(id)}
 
