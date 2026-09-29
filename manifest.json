@@ -1,0 +1,9 @@
+{
+  "name": "Raw Material Yard V1.7",
+  "short_name": "RM Yard",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f4f6f8",
+  "theme_color": "#0f172a",
+  "description": "Raw material yard management and field inspection for QA/QC."
+}

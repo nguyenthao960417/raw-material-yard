@@ -1,0 +1,453 @@
+<!doctype html><html lang="vi"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>Raw Material Yard V1.8</title>
+<link rel="manifest" href="manifest.json">
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:#f4f6f8;color:#17202a}
+header{position:sticky;top:0;background:#0f172a;color:#fff;padding:14px 16px;z-index:5}h1{font-size:20px;margin:0}.sub{font-size:12px;opacity:.75}
+main{max-width:1000px;margin:auto;padding:14px 14px 80px}.view{display:none}.view.active{display:block}
+.search{width:100%;padding:14px;border:1px solid #cbd5e1;border-radius:12px;font-size:16px}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:12px 0}.card{background:#fff;border-radius:14px;padding:14px;box-shadow:0 1px 5px #0001}
+.kpi b{display:block;font-size:24px;margin-top:6px}.actions{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+button{border:0;border-radius:10px;padding:11px 14px;background:#0f172a;color:#fff;cursor:pointer}button.secondary{background:#e2e8f0;color:#17202a}
+select,input,textarea{padding:11px;border:1px solid #cbd5e1;border-radius:10px;width:100%;background:#fff;margin:5px 0}
+.filters{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:10px 0}.item{background:#fff;padding:13px;margin:8px 0;border-radius:12px;border:1px solid #e5e7eb;cursor:pointer}
+.item .top{display:flex;justify-content:space-between}.muted{color:#64748b;font-size:12px}.badge{display:inline-block;padding:4px 8px;border-radius:999px;background:#e2e8f0;font-size:11px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}.check{display:grid;grid-template-columns:1fr 110px;gap:8px;align-items:center;margin:8px 0}
+nav{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid #ddd;display:flex;justify-content:center;gap:8px;padding:8px;z-index:6}
+nav button{background:#fff;color:#17202a;border:1px solid #ddd;padding:8px 12px}@media(max-width:700px){.grid{grid-template-columns:repeat(2,1fr)}.filters{grid-template-columns:1fr 1fr}.row{grid-template-columns:1fr}}
+</style></head><body>
+<header><h1>Raw Material Yard</h1><div class="sub">V1.8 • PC + Mobile Field • QA/QC Material Yard Management & Inspection</div></header>
+<main>
+<section id="home" class="view active"><div class="actions"><button onclick="show('search')">🔎 Search</button><button onclick="openScan()">📷 Scan</button><button id="btnLinkExcel" onclick="linkExcel()">🔗 Change Excel</button><button id="btnRefreshExcel" onclick="refreshExcel()">🔄 Refresh Excel</button><button id="btnDriveFolder" onclick="chooseDriveFolder()">📁 Set Google Drive Folder</button><button id="btnPublishDrive" onclick="publishToDrive()">📤 Publish to Drive</button><button id="btnRefreshMobile" onclick="refreshMobileData()">🔄 Refresh Data</button><button class="secondary" onclick="exportData()">Export</button></div>
+<div class="card" style="margin:10px 0"><b>Data Source</b><div id="syncInfo" class="muted">Checking...</div><div id="excelInfo" class="muted" style="margin-top:6px"></div><div id="modeInfo" class="muted" style="margin-top:6px"></div><div id="driveFolderInfo" class="muted" style="margin-top:6px"></div></div><div class="grid"><div class="card kpi">Materials<b id="kTotal">0</b></div><div class="card kpi">Plates<b id="kPlate">0</b></div><div class="card kpi">Weight kg<b id="kWeight">0</b></div><div class="card kpi">Pending<b id="kPending">0</b></div></div>
+<div class="card"><b>Recent materials</b><div id="recent"></div></div></section>
+<section id="search" class="view">
+<div class="actions"><button class="secondary" onclick="show('home')">← Home</button></div>
+<div class="card">
+<h2>Search Material</h2>
+<div class="muted">Nhập mã hoặc tải hình ảnh marking để OCR và tìm vật tư.</div>
+<input id="q" class="search" placeholder="Plate / Heat / Coil / Material ID / PO / MTC..." oninput="renderList()">
+<div class="actions">
+<button onclick="renderList()">🔍 Search</button>
+<label style="display:inline-block"><input id="imageSearch" type="file" accept="image/*" style="display:none" onchange="ocrImage(this.files[0])"><span class="btn" style="display:inline-block">🖼️ Tải hình ảnh</span></label>
+</div>
+<div id="ocrBox" class="muted"></div>
+</div>
+<div class="filters">
+<select id="fProject" onchange="renderList()"><option value="">All projects</option></select>
+<select id="fGrade" onchange="renderList()"><option value="">All grades</option></select>
+<select id="fStatus" onchange="renderList()"><option value="">All status</option></select>
+<select id="fYard" onchange="renderList()"><option value="">All yards</option></select>
+</div>
+<div id="list"></div>
+</section>
+
+<section id="scan" class="view">
+<div class="actions"><button class="secondary" onclick="show('search')">← Search</button></div>
+<div class="card">
+<h2>Scan</h2>
+<div class="muted">Dùng camera để đọc QR/barcode. Nếu marking không có mã, chụp hình rồi dùng Search → Tải hình ảnh để OCR.</div>
+<video id="scanVideo" autoplay playsinline style="width:100%;border-radius:12px;background:#111;margin:10px 0"></video>
+<div class="actions">
+<button onclick="startScan()">▶ Start Camera</button>
+<button class="secondary" onclick="stopScan()">■ Stop</button>
+<button onclick="captureScanImage()">📷 Capture</button>
+</div>
+<canvas id="scanCanvas" style="display:none"></canvas>
+<div id="scanResult" class="muted"></div>
+</div>
+</section>
+<section id="detail" class="view"><div id="detailBody"></div></section><section id="inspect" class="view"><div id="inspectBody"></div></section><section id="photo" class="view"><div id="photoBody"></div></section><section id="update" class="view"><div id="updateBody"></div></section>
+</main><nav><button onclick="show('home')">Home</button><button onclick="show('search')">Search</button><button onclick="current&&detail(current)">Material</button><button onclick="current&&inspect(current)">Check</button></nav>
+<script src="config.js"></script><script src="local_data.js"></script>
+<script>
+// V1.6 PC + Mobile: no BAT/PowerShell/Python. Link once, then Refresh Excel to reload the linked workbook.
+const IS_MOBILE_MODE = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.maxTouchPoints>1 && window.innerWidth<900);
+const GOOGLE_SYNC_URL = window.RM_GOOGLE_SYNC_URL || '';
+const V17_DRIVE_DB='rm_yard_v17_drive';
+const DRIVE_FOLDER_LABEL='Google Drive for desktop';
+let excelHandle=null;
+let masterData=[];
+const DB_NAME='rm_yard_v17', DB_STORE='handles';
+function openHandleDB(){return new Promise((resolve,reject)=>{if(!('indexedDB' in window))return resolve(null);let r=indexedDB.open(DB_NAME,1);r.onupgradeneeded=()=>r.result.createObjectStore(DB_STORE);r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error)})}
+async function saveExcelHandle(h){try{let db=await openHandleDB();if(!db)return;await new Promise((res,rej)=>{let tx=db.transaction(DB_STORE,'readwrite');tx.objectStore(DB_STORE).put(h,'excel');tx.oncomplete=res;tx.onerror=()=>rej(tx.error)})}catch(e){}}
+async function loadExcelHandle(){try{let db=await openHandleDB();if(!db)return null;return await new Promise((res,rej)=>{let tx=db.transaction(DB_STORE,'readonly');let r=tx.objectStore(DB_STORE).get('excel');r.onsuccess=()=>res(r.result||null);r.onerror=()=>rej(r.error)})}catch(e){return null}}
+async function saveDriveFolderHandle(h){try{let db=await openHandleDB();if(!db)return;await new Promise((res,rej)=>{let tx=db.transaction(DB_STORE,'readwrite');tx.objectStore(DB_STORE).put(h,'driveFolder');tx.oncomplete=res;tx.onerror=()=>rej(tx.error)})}catch(e){}}
+async function loadDriveFolderHandle(){try{let db=await openHandleDB();if(!db)return null;return await new Promise((res,rej)=>{let tx=db.transaction(DB_STORE,'readonly');let r=tx.objectStore(DB_STORE).get('driveFolder');r.onsuccess=()=>res(r.result||null);r.onerror=()=>rej(r.error)})}catch(e){return null}}
+async function ensureWritePermission(h){try{if(!h||!h.queryPermission)return true;let p=await h.queryPermission({mode:'readwrite'});if(p==='granted')return true;if(h.requestPermission){p=await h.requestPermission({mode:'readwrite'});return p==='granted'}return false}catch(e){return false}}
+async function chooseDriveFolder(){
+  if(IS_MOBILE_MODE)return;
+  try{
+    if(!window.showDirectoryPicker){alert('Trình duyệt này không hỗ trợ chọn thư mục. Hãy dùng Chrome hoặc Edge trên PC.');return;}
+    const ok=confirm('SET GOOGLE DRIVE FOLDER\n\nCửa sổ tiếp theo là bộ chọn thư mục của WINDOWS.\n\nHãy chọn đúng thư mục đã được đồng bộ bởi Google Drive for desktop, ví dụ:\n\nGoogle Drive → My Drive → Raw Material Yard\n\nKHÔNG chọn OneDrive (Nguyen - Personal), Documents, Desktop hoặc thư mục local khác.\n\nBấm OK để chọn thư mục.');
+    if(!ok)return;
+    const h=await showDirectoryPicker({mode:'readwrite'});
+    if(!(await ensureWritePermission(h))) throw new Error('Không có quyền ghi thư mục');
+    await saveDriveFolderHandle(h);
+    localStorage.rm_drive_folder_name=h.name;
+    localStorage.rm_drive_folder_type='GOOGLE_DRIVE_DESKTOP';
+    setDriveFolderStatus(h.name,'ok');
+    excelStatus('📁 Google Drive for desktop: '+h.name,'ok');
+    alert('✅ Đã liên kết thư mục Google Drive for desktop: '+h.name+'\n\nLưu ý: trình duyệt không thể tự đọc đường dẫn Windows để xác minh nhà cung cấp. Vì vậy bạn phải chắc chắn folder vừa chọn nằm trong Google Drive for desktop, không phải OneDrive.');
+  }catch(e){if(e.name!=='AbortError')alert('Không thể chọn thư mục Google Drive: '+e.message)}
+}
+
+function setDriveFolderStatus(name,kind='ok'){
+  const el=document.getElementById('driveFolderInfo');
+  if(!el)return;
+  if(name){
+    el.textContent='📁 Google Drive folder: '+name+' • Publish sẽ ghi mobile_master.json vào folder này';
+    el.style.color=kind==='error'?'#991b1b':'#166534';
+  }else{
+    el.textContent='📁 Google Drive folder: Chưa chọn';
+    el.style.color='#92400e';
+  }
+}
+
+async function loadDriveFolderStatus(){
+  try{
+    const h=await loadDriveFolderHandle();
+    if(!h){setDriveFolderStatus('','new');return null;}
+    const hasPermission=await ensureWritePermission(h);
+    if(hasPermission){setDriveFolderStatus(h.name,'ok');return h;}
+    setDriveFolderStatus((h.name||'Đã liên kết')+' • cần cấp lại quyền','new');
+    return h;
+  }catch(e){setDriveFolderStatus('Không đọc được folder đã lưu','error');return null;}
+}
+async function ensurePermission(h){try{if(!h||!h.queryPermission)return true;let p=await h.queryPermission({mode:'read'});if(p==='granted')return true;if(h.requestPermission){p=await h.requestPermission({mode:'read'});return p==='granted'}return false}catch(e){return false}}
+function excelStatus(t,kind='ok'){let el=document.getElementById('excelInfo');if(!el)return;el.textContent=t;el.style.color=kind==='error'?'#991b1b':kind==='new'?'#92400e':'#166534'}
+function setExcelSource(name,lastRefresh,count,kind='ok'){const n=name||localStorage.rm_excel_name||'Chưa liên kết Excel';const lr=lastRefresh||localStorage.rm_excel_last_refresh||'';excelStatus('Nguồn: '+n+(count!=null?' • '+count+' materials':'')+(lr?' • Refresh: '+lr:''),kind)}
+function getFieldOverrides(){try{return JSON.parse(localStorage.rm_field_overrides||'{}')}catch(e){return {}}}
+function saveFieldOverrides(o){localStorage.rm_field_overrides=JSON.stringify(o)}
+function applyFieldOverrides(rows){const ov=getFieldOverrides();return rows.map(x=>{const z=ov[x.Material_ID];return z?Object.assign({},x,z):x})}
+function nowLabel(){return new Date().toLocaleString('vi-VN')}
+async function linkExcel(){
+  try{
+    if(window.showOpenFilePicker){
+      const [h]=await showOpenFilePicker({multiple:false,types:[{description:'Excel workbook',accept:{'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':['.xlsx']}}]});
+      if(!h)return;
+      if(!(await ensurePermission(h))) throw new Error('File permission denied');
+      excelHandle=h; await saveExcelHandle(h);
+      localStorage.rm_excel_name=h.name;
+      excelStatus('🔗 Đã chọn nguồn Excel: '+h.name);
+      await refreshExcel(true);
+    }else{
+      const inp=document.createElement('input'); inp.type='file'; inp.accept='.xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+      inp.onchange=async()=>{if(inp.files[0]){localStorage.rm_excel_name=inp.files[0].name;await importExcelFile(inp.files[0]);setExcelSource(inp.files[0].name,nowLabel(),data.length)}}; inp.click();
+    }
+  }catch(e){excelStatus('🔴 Không thể liên kết Excel: '+e.message,'error');alert('Không thể liên kết Excel. '+e.message)}
+}
+async function refreshExcel(fromLink=false){
+  try{
+    if(!excelHandle) excelHandle=await loadExcelHandle();
+    if(!excelHandle){return linkExcel()}
+    if(!(await ensurePermission(excelHandle))){return linkExcel()}
+    const f=await excelHandle.getFile();
+    await importExcelFile(f);
+    localStorage.rm_excel_name=f.name;
+    localStorage.rm_excel_last_refresh=nowLabel();
+    setExcelSource(f.name,localStorage.rm_excel_last_refresh,data.length,'ok');
+    showSyncStatus('🟢 Excel refreshed • '+data.length+' materials');
+  }catch(e){excelStatus('🔴 Excel refresh failed: '+e.message,'error');alert('Không thể Refresh Excel. Hãy Save/Close RM_Material.xlsx rồi thử lại.\n\n'+e.message)}
+}
+async function importExcelFile(file){
+  if(!file.name.toLowerCase().endsWith('.xlsx')) throw new Error('Chỉ hỗ trợ file Excel .xlsx');
+  const buf=await file.arrayBuffer(); const zip=await xlsxZipEntries(buf);
+  const shared=zip['xl/sharedStrings.xml']?parseSharedStrings(zip['xl/sharedStrings.xml']):[];
+  const sheet=await findMaterialSheet(zip);
+  if(!sheet) throw new Error('Không tìm thấy sheet RM_Material');
+  const rows=parseSheetRows(sheet,shared);
+  const mapped=normalizeRawRows(rows);
+  if(!mapped.length) throw new Error('Không tìm thấy dòng material hợp lệ');
+  masterData=mapped;
+  const merged=applyFieldOverrides(mapped);
+  data=merged;
+  const hash=simpleHash(JSON.stringify(mapped));
+  const signature=simpleHash(file.name+'|'+file.size+'|'+file.lastModified+'|'+hash);
+  const version='EXCEL-'+signature;
+  localDataVersion=version;
+  localStorage.rm_data_version=version;
+  localStorage.rm_data_hash=hash;
+  localStorage.rm_material_count=String(data.length);
+  localStorage.rm_material_data=JSON.stringify(data);
+  localStorage.rm_master_data=JSON.stringify(masterData);
+  localStorage.rm_excel_name=file.name;
+  localStorage.rm_excel_last_refresh=nowLabel();
+  initFiltersOnly();renderHome();renderList();
+  setExcelSource(file.name,localStorage.rm_excel_last_refresh,data.length,'ok');
+  showSyncStatus('🟢 Excel Master • '+data.length+' materials');
+}
+function simpleHash(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return (h>>>0).toString(16)}
+async function xlsxZipEntries(buf){
+  const dv=new DataView(buf), u8=new Uint8Array(buf); let e=-1; for(let i=u8.length-22;i>=Math.max(0,u8.length-65557);i--){if(dv.getUint32(i,true)===0x06054b50){e=i;break}} if(e<0)throw new Error('Invalid XLSX/ZIP');
+  const cdSize=dv.getUint32(e+12,true), cdOff=dv.getUint32(e+16,true), out={}; let p=cdOff,end=cdOff+cdSize;
+  while(p<end){if(dv.getUint32(p,true)!==0x02014b50)break;const method=dv.getUint16(p+10,true),cs=dv.getUint32(p+20,true),us=dv.getUint32(p+24,true),nl=dv.getUint16(p+28,true),el=dv.getUint16(p+30,true),cl=dv.getUint16(p+32,true),lo=dv.getUint32(p+42,true);const name=new TextDecoder().decode(u8.slice(p+46,p+46+nl));const lnl=dv.getUint16(lo+26,true),lel=dv.getUint16(lo+28,true),start=lo+30+lnl+lel;const comp=u8.slice(start,start+cs);let raw;if(method===0)raw=comp.buffer.slice(comp.byteOffset,comp.byteOffset+comp.byteLength);else if(method===8){const ds=new DecompressionStream('deflate-raw');raw=await new Response(new Blob([comp]).stream().pipeThrough(ds)).arrayBuffer()}else throw new Error('Unsupported ZIP compression for '+name);out[name]=new TextDecoder().decode(new Uint8Array(raw));p+=46+nl+el+cl}
+  return out;
+}
+function xmlDoc(s){return new DOMParser().parseFromString(s,'application/xml')}
+function parseSharedStrings(xml){const d=xmlDoc(xml),a=[];d.querySelectorAll('si').forEach(si=>a.push([...si.querySelectorAll('t')].map(x=>x.textContent).join('')));return a}
+async function findMaterialSheet(zip){
+  const wb=zip['xl/workbook.xml']; if(!wb)return null; const rel=zip['xl/_rels/workbook.xml.rels']||'';const wd=xmlDoc(wb),rd=xmlDoc(rel);const rels={};rd.querySelectorAll('Relationship').forEach(x=>rels[x.getAttribute('Id')]=x.getAttribute('Target'));
+  for(const sh of wd.querySelectorAll('sheet')){const name=sh.getAttribute('name')||'';if(name.toLowerCase().includes('rm_material')||name.toLowerCase()==='rm_material'){let t=rels[sh.getAttribute('r:id')]||rels[sh.getAttribute('id')];if(t){if(t.startsWith('/'))t=t.slice(1);if(!t.startsWith('xl/'))t='xl/'+t;return zip[t]||zip['xl/'+t.replace(/^xl\//,'')]}}}
+  // fallback first worksheet
+  const first=Object.keys(zip).find(k=>/^xl\/worksheets\/sheet\d+\.xml$/.test(k));return first?zip[first]:null;
+}
+function colNum(ref){let m=ref.match(/[A-Z]+/i);if(!m)return 0;let n=0;for(const c of m[0].toUpperCase())n=n*26+c.charCodeAt(0)-64;return n-1}
+function parseSheetRows(xml,shared){const d=xmlDoc(xml),rows=[];d.querySelectorAll('row').forEach(r=>{let a=[];r.querySelectorAll(':scope > c').forEach(c=>{const ref=c.getAttribute('r')||'';const idx=colNum(ref);let v='';const t=c.getAttribute('t');if(t==='inlineStr')v=[...c.querySelectorAll('is t')].map(x=>x.textContent).join('');else{const ve=c.querySelector('v');v=ve?ve.textContent:'';if(t==='s')v=shared[Number(v)]??'';else if(t==='str')v=c.querySelector('v')?.textContent||''}a[idx]=v});rows.push(a)});return rows}
+function normKey(s){return String(s||'').toLowerCase().replace(/[\n\r]/g,' ').replace(/\s+/g,' ').trim()}
+function num(v){const n=Number(String(v||'').replace(/,/g,''));return Number.isFinite(n)?n:null}
+function dims(desc){let m=String(desc||'').match(/(\d+(?:\.\d+)?)\s*[x×*]\s*(\d+(?:\.\d+)?)\s*[x×*]\s*(\d+(?:\.\d+)?)/i);return m?{t:num(m[1]),w:num(m[2]),l:num(m[3])}:{t:null,w:null,l:null}}
+function normalizeRawRows(rows){if(!rows.length)return [];const headers=rows[0].map(x=>normKey(x));const idx=(patterns)=>{for(let i=0;i<headers.length;i++)if(patterns.some(p=>headers[i].includes(p)))return i;return -1};const I={project:idx(['project name']),pno:idx(['project no.','project no']),desc:idx(['material description']),spec:idx(['material specification']),man:idx(['manufactures','manufacturer']),grade:idx(['grade','mác thép']),mtc:idx(['mill certificate']),heat:idx(['heat no','số heat']),qty:idx(['quantity']),wt:idx(['weight']),res:idx(['result']),remark:idx(['remark','ghi chú']),mr:idx(['mrir no']),date:idx(['date of inspection'])};const out=[];for(let r=1;r<rows.length;r++){const g=k=>I[k]>=0?(rws=rows[r][I[k]]??'',String(rws).trim()):'';const desc=g('desc');const project=g('project');if(!desc||/sum total|total/i.test(desc))continue;const d=dims(desc);let plate=g('remark');const status=/rej/i.test(g('res'))?'REJECTED':/acc/i.test(g('res'))?'AVAILABLE':'PENDING';const mid='RM-'+String(r).padStart(6,'0');out.push({Material_ID:mid,Project_Code:project,Project_No:g('pno'),Material_Type:/coil/i.test(desc)?'Steel Coil':'Steel Plate',Plate_No:plate,Heat_No:g('heat'),Coil_No:'',Grade:g('grade'),Material_Specification:g('spec'),Thickness_mm:d.t,Width_mm:d.w,Length_mm:d.l,Qty_Pcs:num(g('qty'))||0,Weight_Kg:num(g('wt'))||0,Manufacturer:g('man'),MTC_No:g('mtc'),Material_Status:status,MRIR_No:g('mr'),Inspection_Date:g('date'),Source_Row:r+1});}
+  return out;
+}
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+<script>
+let data=[], current=null, localDataVersion=localStorage.rm_data_version||'',inspections=JSON.parse(localStorage.rm_inspections||'[]'),hist=JSON.parse(localStorage.rm_history||'[]'),photos=JSON.parse(localStorage.rm_photos||'[]');
+
+let scanStream=null, scanTimer=null;
+
+function openScan(){ show('scan'); startScan(); }
+
+async function startScan(){
+  try{
+    stopScan();
+    scanStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}},audio:false});
+    scanVideo.srcObject=scanStream;
+    scanResult.textContent='Camera ready. Đưa QR/barcode vào khung hình.';
+    if('BarcodeDetector' in window){
+      const detector=new BarcodeDetector({formats:['qr_code','code_128','code_39','ean_13','ean_8','upc_a','upc_e']});
+      scanTimer=setInterval(async()=>{
+        try{
+          const codes=await detector.detect(scanVideo);
+          if(codes.length && codes[0].rawValue){
+            const value=codes[0].rawValue.trim();
+            q.value=value;
+            scanResult.innerHTML='<b>Scanned:</b> '+escapeHtml(value);
+            stopScan(); show('search'); renderList();
+          }
+        }catch(e){}
+      },500);
+    }
+  }catch(e){
+    scanResult.textContent='Không mở được camera. Hãy cấp quyền Camera hoặc dùng Search → Tải hình ảnh.';
+  }
+}
+function stopScan(){
+  if(scanTimer){clearInterval(scanTimer);scanTimer=null;}
+  if(scanStream){scanStream.getTracks().forEach(t=>t.stop());scanStream=null;}
+  if(scanVideo) scanVideo.srcObject=null;
+}
+function captureScanImage(){
+  if(!scanStream){alert('Start Camera trước.');return;}
+  const c=scanCanvas, v=scanVideo;
+  c.width=v.videoWidth; c.height=v.videoHeight;
+  c.getContext('2d').drawImage(v,0,0,c.width,c.height);
+  c.toBlob(blob=>ocrImage(blob),'image/jpeg',0.92);
+}
+async function ocrImage(file){
+  if(!file)return;
+  ocrBox.innerHTML='<b>OCR đang đọc hình ảnh...</b> Không đóng màn hình.';
+  try{
+    const result=await Tesseract.recognize(file,'eng',{
+      logger:m=>{
+        if(m.status==='recognizing text' && m.progress) ocrBox.textContent='OCR: '+Math.round(m.progress*100)+'%';
+      }
+    });
+    const text=(result.data.text||'').replace(/\s+/g,' ').trim();
+    ocrBox.innerHTML='<b>OCR:</b> '+escapeHtml(text||'Không đọc được text');
+    if(text){
+      q.value=text;
+      renderList(true);
+    }
+  }catch(e){
+    ocrBox.textContent='OCR lỗi. Bạn có thể nhập mã bằng tay.';
+  }
+}
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
+}
+function show(id){document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));document.getElementById(id).classList.add('active');if(id==='search')renderList()}
+function vals(f){return [...new Set(data.map(x=>x[f]).filter(Boolean))].sort()}
+
+const DATA_URL='../data/RM_MATERIAL.json';
+const VERSION_URL='../data/RM_DATA_VERSION.json';
+
+const IS_LOCAL_FILE = location.protocol === 'file:';
+async function fetchDataVersion(){
+  if(IS_LOCAL_FILE){
+    if(!window.RM_EMBEDDED_VERSION) throw new Error('Embedded version unavailable');
+    return window.RM_EMBEDDED_VERSION;
+  }
+  const r=await fetch(VERSION_URL+'?t='+Date.now(),{cache:'no-store'});
+  if(!r.ok) throw new Error('Version file unavailable');
+  return await r.json();
+}
+async function fetchDataset(){
+  if(IS_LOCAL_FILE){
+    if(!Array.isArray(window.RM_EMBEDDED_DATA)) throw new Error('Embedded dataset unavailable');
+    return window.RM_EMBEDDED_DATA;
+  }
+  const r=await fetch(DATA_URL+'?t='+Date.now(),{cache:'no-store'});
+  if(!r.ok) throw new Error('Dataset unavailable');
+  return await r.json();
+}
+function showSyncStatus(text,kind='ok'){
+  let el=document.getElementById('syncStatus');
+  if(!el){
+    el=document.createElement('div'); el.id='syncStatus';
+    document.querySelector('header').appendChild(el);
+  }
+  el.textContent=text;
+  el.style.cssText='font-size:12px;margin-top:6px;padding:5px 8px;border-radius:8px;display:inline-block;background:'+
+    (kind==='new'?'#fef3c7':kind==='error'?'#fee2e2':'#dcfce7')+';color:'+
+    (kind==='new'?'#92400e':kind==='error'?'#991b1b':'#166534')+';';
+}
+async function checkDataUpdate(){
+  try{
+    const v=await fetchDataVersion();
+    if(!localDataVersion){
+      showSyncStatus('🟢 Data '+v.version_no+' • '+v.record_count+' materials');
+      return v;
+    }
+    if(v.version_no!==localDataVersion || v.content_hash!==(localStorage.rm_data_hash||'')){
+      showSyncStatus('🟠 Có dữ liệu mới: '+v.version_no+' • '+v.record_count+' materials','new');
+      return v;
+    }
+    showSyncStatus((IS_LOCAL_FILE?'🟢 Local • ':'🟢 Latest • ')+v.version_no+' • '+v.record_count+' materials');
+    return v;
+  }catch(e){
+    showSyncStatus('🔴 Không kiểm tra được Data Version','error');
+    return null;
+  }
+}
+async function fetchMobileMaster(){
+  const url=(GOOGLE_SYNC_URL||'./data/mobile_master.json') + ((GOOGLE_SYNC_URL||'./data/mobile_master.json').includes('?')?'&':'?')+'t='+Date.now();
+  const r=await fetch(url,{cache:'no-store'});
+  if(!r.ok)throw new Error('Mobile master HTTP '+r.status);
+  const payload=await r.json();
+  const rows=Array.isArray(payload)?payload:(payload.materials||payload.data||[]);
+  if(!Array.isArray(rows)||!rows.length)throw new Error('Mobile master empty');
+  window._mobilePayloadMeta=Array.isArray(payload)?null:payload;
+  return rows;
+}
+async function refreshMobileData(){
+  if(!IS_MOBILE_MODE)return;
+  try{
+    const rows=await fetchMobileMaster();
+    masterData=rows;
+    data=applyFieldOverrides(rows);
+    localDataVersion='MOBILE-'+simpleHash(JSON.stringify(rows));
+    localStorage.rm_mobile_data=JSON.stringify(rows);
+    localStorage.rm_data_version=localDataVersion;
+    localStorage.rm_material_data=JSON.stringify(data);
+    localStorage.rm_mobile_last_refresh=nowLabel();
+    initFiltersOnly();renderHome();renderList();
+    const mv=window._mobilePayloadMeta?.version_no||localDataVersion; showSyncStatus('🟢 Mobile data refreshed • '+data.length+' materials • '+mv);
+  }catch(e){
+    showSyncStatus('🟠 Offline/cache mode • '+data.length+' materials','new');
+    if(!data.length)alert('Không tải được Mobile Master Data. Hãy kết nối Internet và thử Refresh Data lại.\n\n'+e.message);
+  }
+}
+async function buildMobilePayload(){
+  const rows=masterData.length?masterData:data;
+  if(!rows.length)throw new Error('Chưa có Master Data. Hãy Link/Refresh Excel trước.');
+  const raw=JSON.stringify(rows);
+  const version='MOBILE-'+new Date().toISOString().replace(/[-:TZ.]/g,'').slice(0,14);
+  return {dataset:'RM_MATERIAL',version_no:version,record_count:rows.length,content_hash:simpleHash(raw),published_at:new Date().toISOString(),source_file:localStorage.rm_excel_name||'RM_Material.xlsx',materials:rows};
+}
+async function publishToDrive(){
+  if(IS_MOBILE_MODE)return;
+  try{
+    const payload=await buildMobilePayload();
+    let h=await loadDriveFolderHandle();
+    if(!h){await chooseDriveFolder();h=await loadDriveFolderHandle();}
+    if(!h)throw new Error('Chưa chọn thư mục Google Drive.');
+    if(!(await ensureWritePermission(h))){await chooseDriveFolder();h=await loadDriveFolderHandle();}
+    if(!h)throw new Error('Không có quyền ghi thư mục Drive.');
+    const f=await h.getFileHandle('mobile_master.json',{create:true});
+    const w=await f.createWritable();await w.write(JSON.stringify(payload,null,2));await w.close();
+    localStorage.rm_mobile_published_version=payload.version_no;
+    alert('✅ Đã Publish Mobile Data vào thư mục Drive: '+h.name+'\n\nMaterials: '+payload.record_count+'\nVersion: '+payload.version_no);
+    excelStatus('🟢 Published to Google Drive • '+payload.record_count+' materials • '+payload.version_no);
+  }catch(e){if(e.name!=='AbortError')alert('Publish to Drive failed: '+e.message+'\n\nHãy kiểm tra Set Google Drive Folder và chắc chắn folder đã chọn nằm trong Google Drive for desktop, không phải OneDrive.')}
+}
+async function publishMobileData(){return publishToDrive();}
+
+async function updateData(force=false){return IS_MOBILE_MODE?refreshMobileData():refreshExcel();}
+
+function initFiltersOnly(){
+  [['fProject','Project_Code'],['fGrade','Grade'],['fStatus','Material_Status'],['fYard','Yard_ID']].forEach(a=>{
+    const el=document.getElementById(a[0]); if(!el)return;
+    while(el.options.length>1)el.remove(1);
+    vals(a[1]).sort().forEach(v=>el.add(new Option(v,v)));
+  });
+}
+
+async function init(){
+  try{
+    // Mobile: load cached master first, then try network refresh.
+    if(IS_MOBILE_MODE){
+      document.getElementById('modeInfo').textContent='📱 Mobile Field • Google Drive Sync + Offline Cache';
+      const savedMobile=localStorage.rm_mobile_data;
+      if(savedMobile){
+        masterData=JSON.parse(savedMobile);data=applyFieldOverrides(masterData);localDataVersion=localStorage.rm_data_version||'MOBILE-CACHE';initFiltersOnly();renderHome();renderList();showSyncStatus('🟢 Offline cache • '+data.length+' materials');
+      }else if(Array.isArray(window.RM_EMBEDDED_DATA)){
+        masterData=window.RM_EMBEDDED_DATA;data=applyFieldOverrides(masterData);localDataVersion=window.RM_EMBEDDED_VERSION?.version_no||'EMBEDDED';initFiltersOnly();renderHome();renderList();showSyncStatus('🟠 Embedded fallback • '+data.length+' materials','new');
+      }
+      await refreshMobileData();
+      return;
+    }
+    document.getElementById('modeInfo').textContent='💻 PC Master • Link RM_Material.xlsx → Refresh Excel → Publish Mobile';
+    excelHandle=await loadExcelHandle();
+    const saved=localStorage.rm_material_data;
+    if(saved){
+      const savedField=getFieldOverrides();
+      if(localStorage.rm_master_data){
+        masterData=JSON.parse(localStorage.rm_master_data);
+      }else if(Array.isArray(window.RM_EMBEDDED_DATA)){
+        // Migration from V1.5: use embedded Master as clean source, then re-apply field overrides.
+        masterData=window.RM_EMBEDDED_DATA;
+      }else{
+        masterData=JSON.parse(saved);
+      }
+      data=applyFieldOverrides(masterData);localDataVersion=localStorage.rm_data_version||'LOCAL';
+      initFiltersOnly();renderHome();renderList();
+      if(excelHandle){setExcelSource(localStorage.rm_excel_name||'Linked Excel',localStorage.rm_excel_last_refresh,data.length,'ok');showSyncStatus('🟢 Excel Master cache • '+data.length+' materials');}
+      else{showSyncStatus('🟠 Chưa liên kết Excel • đang dùng dữ liệu cache','new');}
+      return;
+    }
+    if(excelHandle){const f=await excelHandle.getFile();await importExcelFile(f);setExcelSource(f.name,localStorage.rm_excel_last_refresh,data.length);return;}
+    if(Array.isArray(window.RM_EMBEDDED_DATA)){
+      masterData=window.RM_EMBEDDED_DATA;data=applyFieldOverrides(masterData);localDataVersion=window.RM_EMBEDDED_VERSION?.version_no||'EMBEDDED';initFiltersOnly();renderHome();renderList();showSyncStatus('🟠 Chưa liên kết Excel • dữ liệu mẫu/đóng gói '+data.length+' materials','new');excelStatus('Chưa có nguồn Excel. Bấm “🔗 Change Excel” để liên kết RM_Material.xlsx','new');return;
+    }
+    throw new Error('No local data');
+  }catch(e){
+    showSyncStatus('🔴 Data unavailable','error');excelStatus('🔴 Không có dữ liệu. Hãy liên kết RM_Material.xlsx','error');renderHome();renderList();
+  }
+}
+
+function card(x){return `<div class="item" onclick="detail('${x.Material_ID}')"><div class="top"><b>${x.Material_ID}</b><span class="badge">${x.Material_Status||''}</span></div><div>${x.Plate_No||'-'} • ${x.Heat_No||'-'} • ${x.Coil_No||'-'}</div><div class="muted">${x.Grade||''} • ${x.Thickness_mm||''} × ${x.Width_mm||''} × ${x.Length_mm||''} mm • ${x.Weight_Kg||0} kg</div></div>`}
+function renderHome(){if(document.getElementById('syncInfo'))document.getElementById('syncInfo').textContent=(localDataVersion||'Not loaded')+' • '+data.length+' materials';kTotal.textContent=data.length;kPlate.textContent=data.filter(x=>x.Plate_No).length;kWeight.textContent=Math.round(data.reduce((a,x)=>a+(+x.Weight_Kg||0),0)).toLocaleString();kPending.textContent=data.filter(x=>(x.Material_Status||'').toUpperCase()==='PENDING').length;recent.innerHTML=data.slice(-8).reverse().map(card).join('')}
+function renderList(fromOCR=false){let raw=(document.getElementById('q').value||'').trim().toLowerCase(),tokens=raw.split(/[^a-z0-9.-]+/i).filter(t=>t.length>=3),fp=fProject.value,fg=fGrade.value,fs=fStatus.value,fy=fYard.value;let a=data.filter(x=>{if(!raw)return true;let blob=['Material_ID','Plate_No','Heat_No','Coil_No','PO_ID','MTC_No','Grade','Thickness_mm','Width_mm','Length_mm'].map(k=>String(x[k]??'').toLowerCase()).join(' ');return tokens.length?tokens.every(t=>blob.includes(t)):blob.includes(raw)}).filter(x=>!fp||x.Project_Code==fp).filter(x=>!fg||x.Grade==fg).filter(x=>!fs||x.Material_Status==fs).filter(x=>!fy||x.Yard_ID==fy);list.innerHTML=a.slice(0,300).map(card).join('')||'<div class="card"><b>No exact result.</b><br><span class="muted">Kiểm tra Plate/Heat/Coil hoặc bỏ bớt từ OCR rồi Search lại.</span></div>'}
+function detail(id){current=id;let x=data.find(z=>z.Material_ID===id);detailBody.innerHTML=`<div class="actions"><button class="secondary" onclick="show('search')">← Search</button><button onclick="inspect('${id}')">✓ Check</button><button onclick="takePhoto('${id}')">📷 Photo</button><button onclick="updateMat('${id}')">✎ Update</button></div><div class="card"><h2>${x.Material_ID}</h2><span class="badge">${x.Material_Status||''}</span><p><b>Plate:</b> ${x.Plate_No||'-'}<br><b>Heat:</b> ${x.Heat_No||'-'}<br><b>Coil:</b> ${x.Coil_No||'-'}</p><p><b>Grade:</b> ${x.Grade||'-'}<br><b>Size:</b> ${x.Thickness_mm||'-'} × ${x.Width_mm||'-'} × ${x.Length_mm||'-'} mm<br><b>Qty:</b> ${x.Qty_Pcs||0} pcs<br><b>Weight:</b> ${x.Weight_Kg||0} kg</p><p><b>Project:</b> ${x.Project_Code||'-'}<br><b>PO:</b> ${x.PO_ID||'-'}<br><b>Yard:</b> ${x.Yard_ID||'-'}<br><b>Manufacturer:</b> ${x.Manufacturer||'-'}<br><b>MTC:</b> ${x.MTC_No||'-'}</p></div><div class="card"><b>History</b>${hist.filter(h=>h.Material_ID===id).slice(-10).reverse().map(h=>`<p class="muted">${h.Updated_Date} • ${h.Field_Name}: ${h.Old_Value} → ${h.New_Value}</p>`).join('')||'<p class="muted">No updates</p>'}</div>`;show('detail')}
+function inspect(id){current=id;let fs=['Marking','Grade','Thickness','Width','Length','Surface','Quantity','MTC'];inspectBody.innerHTML=`<div class="actions"><button class="secondary" onclick="detail('${id}')">← Material</button></div><div class="card"><h2>Material Check</h2>${fs.map(f=>`<div class="check"><b>${f}</b><select id="r_${f}"><option>PASS</option><option>HOLD</option><option>FAIL</option><option>N/A</option></select></div>`).join('')}<textarea id="remark" placeholder="Remark (required for HOLD/FAIL)"></textarea><button onclick="saveInspection('${id}')">Save Inspection</button></div>`;show('inspect')}
+function saveInspection(id){let fs=['Marking','Grade','Thickness','Width','Length','Surface','Quantity','MTC'],v=fs.map(f=>document.getElementById('r_'+f).value),o=v.includes('FAIL')?'REJECTED':v.includes('HOLD')?'HOLD':'ACCEPTED',r=remark.value;if((o==='HOLD'||o==='REJECTED')&&!r.trim())return alert('Remark is required');let rec={Inspection_ID:'INS-'+Date.now(),Material_ID:id,Inspection_Date:new Date().toISOString(),Overall_Result:o,Remark:r};fs.forEach((f,i)=>rec[f+'_Result']=v[i]);inspections.push(rec);localStorage.rm_inspections=JSON.stringify(inspections);let x=data.find(z=>z.Material_ID===id),old=x.Material_Status,newStatus=o==='ACCEPTED'?'AVAILABLE':o; x.Material_Status=newStatus; const ov=getFieldOverrides(); ov[id]=Object.assign({},ov[id]||{},{Material_Status:newStatus,Remark:r}); saveFieldOverrides(ov); hist.push({History_ID:'HIS-'+Date.now(),Material_ID:id,Action:'INSPECTION',Field_Name:'Material_Status',Old_Value:old,New_Value:newStatus,Updated_By:'Field User',Updated_Date:new Date().toISOString(),Remark:r});localStorage.rm_history=JSON.stringify(hist);localStorage.rm_material_data=JSON.stringify(data);alert('Inspection saved');detail(id)}
+
+function takePhoto(id){current=id;photoBody.innerHTML=`<div class="actions"><button class="secondary" onclick="detail('${id}')">← Material</button></div><div class="card"><h2>Photo Evidence</h2><select id="ptype"><option>Material Marking</option><option>Plate</option><option>Heat/Coil</option><option>Surface</option><option>Dimension</option><option>MTC</option><option>Yard Location</option><option>Other</option></select><input id="camera" type="file" accept="image/*" capture="environment"><input id="premark" placeholder="Remark"><button onclick="savePhoto('${id}')">Save Photo</button></div>`;show('photo')}
+function savePhoto(id){let f=camera.files[0];if(!f)return alert('Take/select a photo');let r=new FileReader();r.onload=()=>{photos.push({Photo_ID:'PH-'+Date.now(),Material_ID:id,Photo_Type:ptype.value,Photo_URL:r.result,Taken_By:'Field User',Taken_Date:new Date().toISOString(),Remark:premark.value});localStorage.rm_photos=JSON.stringify(photos);alert('Photo saved on device');detail(id)};r.readAsDataURL(f)}
+function updateMat(id){let x=data.find(z=>z.Material_ID===id);updateBody.innerHTML=`<div class="actions"><button class="secondary" onclick="detail('${id}')">← Material</button></div><div class="card"><h2>Update</h2><div class="row"><div>Qty<input id="uQty" type="number" value="${x.Qty_Pcs??''}"></div><div>Yard<input id="uYard" value="${x.Yard_ID??''}" placeholder="YARD-A01"></div></div>Status<select id="uStatus">${['AVAILABLE','PENDING','HOLD','REJECTED','USED'].map(s=>`<option ${x.Material_Status===s?'selected':''}>${s}</option>`).join('')}</select><textarea id="uRemark" placeholder="Remark">${x.Remark||''}</textarea><button onclick="saveUpdate('${id}')">Save Update</button></div>`;show('update')}
+function saveUpdate(id){let x=data.find(z=>z.Material_ID===id);const ov=getFieldOverrides(); ov[id]=Object.assign({},ov[id]||{});[['Qty_Pcs','uQty'],['Yard_ID','uYard'],['Material_Status','uStatus']].forEach(([f,e])=>{let n=document.getElementById(e).value,o=x[f]??'';if(String(o)!==String(n)){hist.push({History_ID:'HIS-'+Date.now()+Math.random(),Material_ID:id,Action:'UPDATE',Field_Name:f,Old_Value:o,New_Value:n,Updated_By:'Field User',Updated_Date:new Date().toISOString(),Remark:uRemark.value});x[f]=f==='Qty_Pcs'?Number(n):n;ov[id][f]=x[f]}});if(uRemark.value.trim()){x.Remark=uRemark.value;ov[id].Remark=uRemark.value} saveFieldOverrides(ov);localStorage.rm_history=JSON.stringify(hist);localStorage.rm_material_data=JSON.stringify(data);renderHome();alert('Updated');detail(id)}
+
+function exportData(){let b=new Blob([JSON.stringify({materials:data,inspections,hist,photos})],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='RM_Yard_Backup.json';a.click()}
+function setupModeUI(){
+  const ids=['btnLinkExcel','btnRefreshExcel','btnDriveFolder','btnPublishDrive'];
+  ids.forEach(id=>{const el=document.getElementById(id);if(el)el.style.display=IS_MOBILE_MODE?'none':'inline-block'});
+  const mr=document.getElementById('btnRefreshMobile');if(mr)mr.style.display=IS_MOBILE_MODE?'inline-block':'none';
+  if(IS_MOBILE_MODE && !GOOGLE_SYNC_URL){showSyncStatus('🟠 Chưa cấu hình Google Drive Sync • đang dùng cache/fallback','new');}
+}
+setupModeUI();
+init();
+if(!IS_LOCAL_FILE && 'serviceWorker'in navigator)navigator.serviceWorker.register('sw.js');
+</script></body></html>
