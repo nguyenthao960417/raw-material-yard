@@ -1,5 +1,5 @@
 <!doctype html><html lang="vi"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1"><title>Raw Material Yard V1.9 Mobile</title>
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>Raw Material Yard V1.9.2 Mobile</title>
 <link rel="manifest" href="manifest.json">
 <style>
 *{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:#f4f6f8;color:#17202a}
@@ -14,9 +14,9 @@ select,input,textarea{padding:11px;border:1px solid #cbd5e1;border-radius:10px;w
 .item .top{display:flex;justify-content:space-between}.muted{color:#64748b;font-size:12px}.badge{display:inline-block;padding:4px 8px;border-radius:999px;background:#e2e8f0;font-size:11px}
 .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}.check{display:grid;grid-template-columns:1fr 110px;gap:8px;align-items:center;margin:8px 0}
 nav{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid #ddd;display:flex;justify-content:center;gap:8px;padding:8px;z-index:6}
-nav button{background:#fff;color:#17202a;border:1px solid #ddd;padding:8px 12px}.btn{display:inline-block;padding:11px 14px;border-radius:10px;background:#0f172a;color:#fff;cursor:pointer}.ocr-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.chip{border:1px solid #cbd5e1;background:#fff;color:#17202a;border-radius:999px;padding:7px 10px;font-size:12px;cursor:pointer}.match{font-size:11px;padding:3px 7px;border-radius:999px;background:#dcfce7;color:#166534}.warn{background:#fef3c7;color:#92400e}.detail-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.kv{background:#f8fafc;border-radius:10px;padding:9px}.kv b{display:block;font-size:11px;color:#64748b;margin-bottom:3px}.camera-frame{width:100%;max-height:52vh;object-fit:cover;background:#111;border-radius:12px}@media(max-width:700px){.grid{grid-template-columns:repeat(2,1fr)}.filters{grid-template-columns:1fr 1fr}.row{grid-template-columns:1fr}.detail-grid{grid-template-columns:1fr 1fr}button{padding:11px 12px}}
+nav button{background:#fff;color:#17202a;border:1px solid #ddd;padding:8px 12px}.btn{display:inline-block;padding:11px 14px;border-radius:10px;background:#0f172a;color:#fff;cursor:pointer}.ocr-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.chip{border:1px solid #cbd5e1;background:#fff;color:#17202a;border-radius:999px;padding:7px 10px;font-size:12px;cursor:pointer}.match{font-size:11px;padding:3px 7px;border-radius:999px;background:#dcfce7;color:#166534}.warn{background:#fef3c7;color:#92400e}.detail-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.kv{background:#f8fafc;border-radius:10px;padding:9px}.kv b{display:block;font-size:11px;color:#64748b;margin-bottom:3px}.camera-frame{width:100%;max-height:52vh;object-fit:cover;background:#111;border-radius:12px}.ocr-workspace{background:#0f172a;border-radius:14px;padding:8px;touch-action:none;user-select:none}.ocr-canvas{display:block;width:100%;height:auto;border-radius:10px;background:#111;touch-action:none}.ocr-toolbar{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.ocr-stat{font-size:12px;color:#cbd5e1}.ocr-preview{width:100%;max-height:220px;object-fit:contain;background:#111;border-radius:10px;margin-top:8px}.preset{background:#e2e8f0;color:#17202a}.preset.active{background:#0f172a;color:#fff}@media(max-width:700px){.grid{grid-template-columns:repeat(2,1fr)}.filters{grid-template-columns:1fr 1fr}.row{grid-template-columns:1fr}.detail-grid{grid-template-columns:1fr 1fr}button{padding:11px 12px}}
 </style></head><body>
-<header><h1>Raw Material Yard</h1><div class="sub">V1.9 • Mobile Field • QA/QC Material Yard Management & Inspection</div></header>
+<header><h1>Raw Material Yard</h1><div class="sub">V1.9.2 • Mobile Field • QA/QC Material Yard Management & Inspection</div></header>
 <main>
 <section id="home" class="view active"><div class="actions"><button onclick="show('search')">🔎 Search</button><button onclick="openScan()">📷 Scan</button><button id="btnLinkExcel" onclick="linkExcel()">🔗 Change Excel</button><button id="btnRefreshExcel" onclick="refreshExcel()">🔄 Refresh Excel</button><button id="btnDriveFolder" onclick="chooseDriveFolder()">📁 Set Google Drive Folder</button><button id="btnPublishDrive" onclick="publishToDrive()">📤 Publish to Drive</button><button id="btnRefreshMobile" onclick="refreshMobileData()">🔄 Refresh Data</button><button class="secondary" onclick="exportData()">Export</button></div>
 <div class="card" style="margin:10px 0"><b>Data Source</b><div id="syncInfo" class="muted">Checking...</div><div id="excelInfo" class="muted" style="margin-top:6px"></div><div id="modeInfo" class="muted" style="margin-top:6px"></div><div id="driveFolderInfo" class="muted" style="margin-top:6px"></div></div><div class="grid"><div class="card kpi">Materials<b id="kTotal">0</b></div><div class="card kpi">Plates<b id="kPlate">0</b></div><div class="card kpi">Weight kg<b id="kWeight">0</b></div><div class="card kpi">Pending<b id="kPending">0</b></div></div>
@@ -29,9 +29,30 @@ nav button{background:#fff;color:#17202a;border:1px solid #ddd;padding:8px 12px}
 <input id="q" class="search" placeholder="Plate / Heat / Coil / Material ID / PO / MTC..." oninput="renderList()">
 <div class="actions">
 <button onclick="renderList()">🔍 Search</button>
-<label style="display:inline-block"><input id="imageSearch" type="file" accept="image/*" style="display:none" onchange="ocrImage(this.files[0])"><span class="btn" style="display:inline-block">🖼️ Tải hình ảnh</span></label>
+<label style="display:inline-block"><input id="imageSearch" type="file" accept="image/*" style="display:none" onchange="openOCRWorkspace(this.files[0])"><span class="btn" style="display:inline-block">🖼️ Chọn ảnh & OCR</span></label>
+<button class="secondary" onclick="openOCRWorkspaceFromCamera()">📷 Chụp & chọn vùng</button>
 </div>
-<div class="ocr-actions"><button class="secondary" onclick="clearSearch()">✕ Clear</button><button class="secondary" onclick="rerunOCR()">🔁 OCR lại</button></div><div id="ocrBox" class="muted"></div><div id="ocrCandidates" class="ocr-actions"></div>
+<div class="ocr-actions"><button class="secondary" onclick="clearSearch()">✕ Clear</button><button class="secondary" onclick="rerunOCR()">🔁 OCR lại vùng</button></div>
+<div id="ocrBox" class="muted"></div><div id="ocrCandidates" class="ocr-actions"></div>
+<div id="ocrWorkspace" class="card" style="display:none;margin-top:10px">
+  <h3 style="margin-top:0">🎯 Chọn vị trí OCR</h3>
+  <div class="muted">Kéo ngón tay/chuột trên ảnh để khoanh đúng vùng marking. Vùng chọn sẽ được phóng to trước khi OCR.</div>
+  <div class="ocr-actions">
+    <button class="preset active" id="ocrPresetCustom" onclick="setOCRPreset('custom')">✋ Tùy chọn</button>
+    <button class="preset" onclick="setOCRPreset('center')">▣ Trung tâm</button>
+    <button class="preset" onclick="setOCRPreset('top')">⬆ Phía trên</button>
+    <button class="preset" onclick="setOCRPreset('bottom')">⬇ Phía dưới</button>
+    <button class="preset" onclick="setOCRPreset('full')">▣ Toàn ảnh</button>
+  </div>
+  <div class="ocr-workspace"><canvas id="ocrCanvas" class="ocr-canvas"></canvas><div id="ocrStat" class="ocr-stat">Chưa chọn vùng</div></div>
+  <div class="ocr-toolbar">
+    <button onclick="runSelectedOCR()">🔎 OCR vùng chọn</button>
+    <button class="secondary" onclick="runFullImageOCR()">🧾 OCR toàn ảnh</button>
+    <button class="secondary" onclick="resetOCRSelection()">↺ Chọn lại</button>
+    <button class="secondary" onclick="closeOCRWorkspace()">✕ Đóng</button>
+  </div>
+  <img id="ocrCropPreview" class="ocr-preview" style="display:none">
+</div>
 </div>
 <div class="filters">
 <select id="fProject" onchange="renderList()"><option value="">All projects</option></select>
@@ -252,19 +273,58 @@ function normalizeOCRText(s){
 function ocrCompact(s){return normalizeOCRText(s).toUpperCase().replace(/[^A-Z0-9]/g,'')}
 function levenshtein(a,b){a=String(a);b=String(b);if(a===b)return 0;if(!a)return b.length;if(!b)return a.length;let prev=Array.from({length:b.length+1},(_,i)=>i);for(let i=1;i<=a.length;i++){let cur=[i];for(let j=1;j<=b.length;j++)cur[j]=Math.min(cur[j-1]+1,prev[j]+1,prev[j-1]+(a[i-1]===b[j-1]?0:1));prev=cur}return prev[b.length]}
 function similarity(a,b){a=ocrCompact(a);b=ocrCompact(b);if(!a||!b)return 0;if(a===b)return 1;if(a.includes(b)||b.includes(a))return Math.min(a.length,b.length)/Math.max(a.length,b.length)*0.95;return Math.max(0,1-levenshtein(a,b)/Math.max(a.length,b.length))}
-function imageVariant(file,mode){return new Promise((resolve,reject)=>{const img=new Image();const url=URL.createObjectURL(file);img.onload=()=>{const maxW=1800,scale=Math.min(1,maxW/img.naturalWidth),w=Math.max(1,Math.round(img.naturalWidth*scale)),h=Math.max(1,Math.round(img.naturalHeight*scale));const c=document.createElement('canvas');c.width=w;c.height=h;const ctx=c.getContext('2d',{willReadFrequently:true});ctx.drawImage(img,0,0,w,h);if(mode!=='original'){const im=ctx.getImageData(0,0,w,h),d=im.data;for(let i=0;i<d.length;i+=4){let y=0.299*d[i]+0.587*d[i+1]+0.114*d[i+2];if(mode==='threshold')y=y>150?255:0;else if(mode==='contrast')y=Math.max(0,Math.min(255,(y-128)*1.8+128));d[i]=d[i+1]=d[i+2]=y}ctx.putImageData(im,0,0)}c.toBlob(b=>{URL.revokeObjectURL(url);b?resolve(b):reject(new Error('Cannot create image'))},'image/jpeg',0.92)};img.onerror=()=>{URL.revokeObjectURL(url);reject(new Error('Cannot read image'))};img.src=url})}
-async function runOCRVariant(blob,label){const result=await Tesseract.recognize(blob,'eng',{logger:m=>{if(m.status==='recognizing text'&&m.progress)ocrBox.textContent=label+' • OCR '+Math.round(m.progress*100)+'%'}});return normalizeOCRText(result.data.text||'')}
-async function ocrImage(file){
-  if(!file)return;ocrBox.innerHTML='<b>OCR đang đọc...</b> Chuẩn hóa ảnh + thử nhiều chế độ.';ocrCandidates.innerHTML='';
-  try{const variants=['original','contrast','threshold'];const texts=[];for(const mode of variants){const b=await imageVariant(file,mode);const t=await runOCRVariant(b,mode==='original'?'Ảnh gốc':mode==='contrast'?'Tăng tương phản':'Nhị phân');if(t)texts.push(t)}
-    const unique=[...new Set(texts)].sort((a,b)=>ocrCompact(b).length-ocrCompact(a).length);const text=unique[0]||'';ocrBox.innerHTML='<b>OCR:</b> '+escapeHtml(text||'Không đọc được text');
-    if(text){q.value=text;renderList(true);showOCRCandidates(text)}
-  }catch(e){ocrBox.textContent='OCR lỗi: '+e.message+' • Bạn có thể nhập mã bằng tay.'}
+
+let ocrImageSource=null, ocrImgEl=null, ocrSelection={x:0,y:0,w:0,h:0}, ocrDrag=null, ocrObjectURL=null, ocrPreset='custom';
+const ocrCanvas=document.getElementById('ocrCanvas');
+const ocrCtx=ocrCanvas?ocrCanvas.getContext('2d'):null;
+function clamp(n,a,b){return Math.max(a,Math.min(b,n))}
+function setOCRPreset(mode){ocrPreset=mode;document.querySelectorAll('.preset').forEach(b=>b.classList.remove('active'));const ids={custom:'ocrPresetCustom'};if(ids[mode])document.getElementById(ids[mode])?.classList.add('active');if(mode!=='custom'&&ocrImgEl){const w=ocrImgEl.naturalWidth,h=ocrImgEl.naturalHeight;let x=0,y=0,rw=w,rh=h;if(mode==='center'){rw=Math.round(w*.55);rh=Math.round(h*.40);x=Math.round((w-rw)/2);y=Math.round((h-rh)/2)}else if(mode==='top'){rh=Math.round(h*.38);y=0}else if(mode==='bottom'){rh=Math.round(h*.38);y=h-rh}ocrSelection={x,y,w:rw,h:rh};drawOCRCanvas();}}
+function openOCRWorkspace(file){if(!file)return;loadOCRImage(file)}
+function openOCRWorkspaceFromCamera(){
+  if(!scanStream){show('scan');startScan().then(()=>setTimeout(()=>{if(scanStream)captureScanToWorkspace();},500));return;}
+  captureScanToWorkspace();
 }
-function showOCRCandidates(text){const raw=normalizeOCRText(text);const toks=raw.toUpperCase().split(/[^A-Z0-9.-]+/).filter(t=>t.length>=3);const uniq=[...new Set(toks)].slice(0,12);ocrCandidates.innerHTML=uniq.map(t=>`<button class="chip" onclick="useOCRToken('${escapeAttr(t)}')">${escapeHtml(t)}</button>`).join('')}
+function captureScanToWorkspace(){if(!scanStream){alert('Hãy mở Camera trước.');return;}const v=scanVideo,c=document.createElement('canvas');c.width=v.videoWidth;c.height=v.videoHeight;c.getContext('2d').drawImage(v,0,0,c.width,c.height);c.toBlob(b=>{if(b)loadOCRImage(b);},'image/jpeg',0.95);}
+function loadOCRImage(file){
+  show('search');
+  closeOCRWorkspace(false);
+  ocrImageSource=file;
+  if(ocrObjectURL)URL.revokeObjectURL(ocrObjectURL);
+  ocrObjectURL=URL.createObjectURL(file);
+  ocrImgEl=new Image();
+  ocrImgEl.onload=()=>{const max=1600,scale=Math.min(1,max/ocrImgEl.naturalWidth);ocrCanvas.width=Math.max(1,Math.round(ocrImgEl.naturalWidth*scale));ocrCanvas.height=Math.max(1,Math.round(ocrImgEl.naturalHeight*scale));ocrSelection={x:0,y:0,w:ocrImgEl.naturalWidth,h:ocrImgEl.naturalHeight};ocrPreset='full';document.getElementById('ocrWorkspace').style.display='block';setOCRPreset('full');drawOCRCanvas();};
+  ocrImgEl.onerror=()=>{alert('Không đọc được ảnh OCR.');};
+  ocrImgEl.src=ocrObjectURL;
+}
+function canvasPoint(ev){const r=ocrCanvas.getBoundingClientRect();const sx=ocrImgEl.naturalWidth/ocrCanvas.width,sy=ocrImgEl.naturalHeight/ocrCanvas.height;return {x:clamp((ev.clientX-r.left)*sx,0,ocrImgEl.naturalWidth),y:clamp((ev.clientY-r.top)*sy,0,ocrImgEl.naturalHeight)};}
+function drawOCRCanvas(){if(!ocrCtx||!ocrImgEl)return;const cw=ocrCanvas.width,ch=ocrCanvas.height;ocrCtx.clearRect(0,0,cw,ch);ocrCtx.drawImage(ocrImgEl,0,0,cw,ch);const sx=cw/ocrImgEl.naturalWidth,sy=ch/ocrImgEl.naturalHeight;const r={x:ocrSelection.x*sx,y:ocrSelection.y*sy,w:ocrSelection.w*sx,h:ocrSelection.h*sy};ocrCtx.fillStyle='rgba(0,0,0,.48)';ocrCtx.fillRect(0,0,cw,ch);ocrCtx.clearRect(r.x,r.y,r.w,r.h);ocrCtx.drawImage(ocrImgEl,ocrSelection.x,ocrSelection.y,ocrSelection.w,ocrSelection.h,r.x,r.y,r.w,r.h);ocrCtx.strokeStyle='#22c55e';ocrCtx.lineWidth=Math.max(3,cw/500);ocrCtx.strokeRect(r.x,r.y,r.w,r.h);ocrCtx.fillStyle='#22c55e';ocrCtx.fillRect(r.x,r.y,Math.min(r.w,110),28);ocrCtx.fillStyle='#fff';ocrCtx.font='bold 14px Arial';ocrCtx.fillText('OCR AREA',r.x+8,r.y+19);document.getElementById('ocrStat').textContent=`Vùng: ${Math.round(ocrSelection.w)} × ${Math.round(ocrSelection.h)} px • kéo để chọn vị trí`;}
+function beginOCRDrag(ev){if(!ocrImgEl)return;ev.preventDefault();ocrDrag=canvasPoint(ev);ocrSelection={x:ocrDrag.x,y:ocrDrag.y,w:0,h:0};ocrCanvas.setPointerCapture?.(ev.pointerId);}
+function moveOCRDrag(ev){if(!ocrDrag||!ocrImgEl)return;ev.preventDefault();const p=canvasPoint(ev);const x=Math.min(ocrDrag.x,p.x),y=Math.min(ocrDrag.y,p.y),w=Math.abs(p.x-ocrDrag.x),h=Math.abs(p.y-ocrDrag.y);ocrSelection={x,y,w,h};drawOCRCanvas();}
+function endOCRDrag(ev){if(!ocrDrag)return;const p=canvasPoint(ev);if(ocrSelection.w<20||ocrSelection.h<10){ocrSelection={x:0,y:0,w:ocrImgEl.naturalWidth,h:ocrImgEl.naturalHeight};}ocrDrag=null;drawOCRCanvas();}
+if(ocrCanvas){ocrCanvas.addEventListener('pointerdown',beginOCRDrag);ocrCanvas.addEventListener('pointermove',moveOCRDrag);ocrCanvas.addEventListener('pointerup',endOCRDrag);ocrCanvas.addEventListener('pointercancel',endOCRDrag);}
+function cropSelectionCanvas(preprocess='original'){
+  const scale=1.5;const w=Math.max(1,Math.round(ocrSelection.w*scale)),h=Math.max(1,Math.round(ocrSelection.h*scale));const c=document.createElement('canvas');c.width=Math.min(2400,w);c.height=Math.min(2400,h);const ctx=c.getContext('2d',{willReadFrequently:true});ctx.drawImage(ocrImgEl,ocrSelection.x,ocrSelection.y,ocrSelection.w,ocrSelection.h,0,0,c.width,c.height);
+  if(preprocess!=='original'){const im=ctx.getImageData(0,0,c.width,c.height),d=im.data;for(let i=0;i<d.length;i+=4){let y=.299*d[i]+.587*d[i+1]+.114*d[i+2];if(preprocess==='gray'){}else if(preprocess==='contrast')y=clamp((y-128)*2.0+128,0,255);else if(preprocess==='threshold')y=y>145?255:0;d[i]=d[i+1]=d[i+2]=y}ctx.putImageData(im,0,0);}
+  return new Promise((resolve,reject)=>c.toBlob(b=>b?resolve(b):reject(new Error('Cannot create OCR crop')),'image/png'));
+}
+async function runOCRVariant(blob,label){const result=await Tesseract.recognize(blob,'eng',{logger:m=>{if(m.status==='recognizing text'&&m.progress)ocrBox.textContent=label+' • OCR '+Math.round(m.progress*100)+'%'}});return normalizeOCRText(result.data.text||'')}
+async function executeOCR(preferred='selection'){
+  if(!ocrImgEl)return;ocrBox.innerHTML='<b>OCR đang đọc vùng đã chọn...</b>';ocrCandidates.innerHTML='';
+  try{const modes=['original','contrast','threshold'];const texts=[];for(const mode of modes){const b=await cropSelectionCanvas(mode);const t=await runOCRVariant(b,mode==='original'?'Vùng gốc':mode==='contrast'?'Vùng tăng tương phản':'Vùng nhị phân');if(t)texts.push(t)}
+    const ranked=[...new Set(texts)].sort((a,b)=>{const aa=ocrCompact(a),bb=ocrCompact(b);return bb.length-aa.length});const text=ranked[0]||'';const prev=document.getElementById('ocrCropPreview');if(prev){const pb=await cropSelectionCanvas('original');prev.src=URL.createObjectURL(pb);prev.style.display='block';}
+    ocrBox.innerHTML='<b>OCR vùng:</b> '+escapeHtml(text||'Không đọc được text');if(text){q.value=text;renderList(true);showOCRCandidates(text);}
+  }catch(e){ocrBox.textContent='OCR lỗi: '+e.message+' • Hãy chọn vùng khác hoặc chụp gần hơn.'}
+}
+function runSelectedOCR(){executeOCR('selection')}
+function runFullImageOCR(){if(!ocrImgEl)return;ocrSelection={x:0,y:0,w:ocrImgEl.naturalWidth,h:ocrImgEl.naturalHeight};drawOCRCanvas();executeOCR('full')}
+function resetOCRSelection(){if(!ocrImgEl)return;ocrSelection={x:0,y:0,w:ocrImgEl.naturalWidth,h:ocrImgEl.naturalHeight};ocrPreset='custom';drawOCRCanvas()}
+function closeOCRWorkspace(clear=true){const box=document.getElementById('ocrWorkspace');if(box)box.style.display='none';if(clear){ocrImageSource=null;ocrImgEl=null;if(ocrObjectURL){URL.revokeObjectURL(ocrObjectURL);ocrObjectURL=null;}}}
+function imageVariant(file,mode){return new Promise((resolve,reject)=>{const img=new Image();const url=URL.createObjectURL(file);img.onload=()=>{const maxW=1800,scale=Math.min(1,maxW/img.naturalWidth),w=Math.max(1,Math.round(img.naturalWidth*scale)),h=Math.max(1,Math.round(img.naturalHeight*scale));const c=document.createElement('canvas');c.width=w;c.height=h;const ctx=c.getContext('2d',{willReadFrequently:true});ctx.drawImage(img,0,0,w,h);if(mode!=='original'){const im=ctx.getImageData(0,0,w,h),d=im.data;for(let i=0;i<d.length;i+=4){let y=0.299*d[i]+0.587*d[i+1]+0.114*d[i+2];if(mode==='threshold')y=y>150?255:0;else if(mode==='contrast')y=Math.max(0,Math.min(255,(y-128)*1.8+128));d[i]=d[i+1]=d[i+2]=y}ctx.putImageData(im,0,0)}c.toBlob(b=>{URL.revokeObjectURL(url);b?resolve(b):reject(new Error('Cannot create image'))},'image/jpeg',0.92)};img.onerror=()=>{URL.revokeObjectURL(url);reject(new Error('Cannot read image'))};img.src=url})}
+async function ocrImage(file){if(!file)return;loadOCRImage(file)}
+function showOCRCandidates(text){const raw=normalizeOCRText(text);const toks=raw.toUpperCase().split(/[^A-Z0-9.-]+/).filter(t=>t.length>=3);const uniq=[...new Set(toks)].slice(0,16);ocrCandidates.innerHTML=uniq.map(t=>`<button class="chip" onclick="useOCRToken('${escapeAttr(t)}')">${escapeHtml(t)}</button>`).join('')}
 function useOCRToken(t){q.value=t;renderList(true)}
-function clearSearch(){q.value='';ocrBox.textContent='';ocrCandidates.innerHTML='';renderList()}
-function rerunOCR(){const inp=document.getElementById('imageSearch');if(inp&&inp.files&&inp.files[0])ocrImage(inp.files[0]);else alert('Hãy chọn ảnh marking trước.')}
+function clearSearch(){q.value='';ocrBox.textContent='';ocrCandidates.innerHTML='';closeOCRWorkspace();renderList()}
+function rerunOCR(){if(ocrImgEl)runSelectedOCR();else{const inp=document.getElementById('imageSearch');if(inp&&inp.files&&inp.files[0])ocrImage(inp.files[0]);else alert('Hãy chọn ảnh marking trước.')}}
 function escapeAttr(s){return String(s||'').replace(/&/g,'&amp;').replace(/'/g,'&#39;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
 function escapeHtml(s){
   return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
@@ -430,6 +490,17 @@ async function init(){
 }
 
 function card(x,match){return `<div class="item" onclick="detail('${escapeAttr(x.Material_ID)}')"><div class="top"><b>${escapeHtml(x.Material_ID)}</b><span>${match!=null?`<span class="match">Match ${Math.round(match*100)}%</span> `:''}<span class="badge">${escapeHtml(x.Material_Status||'')}</span></span></div><div>${escapeHtml(x.Plate_No||'-')} • ${escapeHtml(x.Heat_No||'-')} • ${escapeHtml(x.Coil_No||'-')}</div><div class="muted">${escapeHtml(x.Grade||'')} • ${escapeHtml(x.Thickness_mm||'')} × ${escapeHtml(x.Width_mm||'')} × ${escapeHtml(x.Length_mm||'')} mm • ${escapeHtml(x.Weight_Kg||0)} kg</div></div>`}
+function renderHome(){
+  const total=data.length;
+  const plates=data.filter(x=>String(x.Material_Type||'').toLowerCase().includes('plate')).length;
+  const weight=data.reduce((a,x)=>a+(Number(x.Weight_Kg)||0),0);
+  const pending=data.filter(x=>String(x.Material_Status||'').toUpperCase()==='PENDING').length;
+  const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=typeof v==='number'?v.toLocaleString('en-US'):v};
+  set('kTotal',total);set('kPlate',plates);set('kWeight',Math.round(weight).toLocaleString('en-US'));set('kPending',pending);
+  const recent=document.getElementById('recent');
+  if(recent) recent.innerHTML=data.slice(-5).reverse().map(x=>card(x)).join('')||'<div class="muted">No materials.</div>';
+}
+
 function searchScore(x,raw,tokens){const fields=['Material_ID','Plate_No','Heat_No','Coil_No','PO_ID','MTC_No','Grade','Thickness_mm','Width_mm','Length_mm','Project_Code','Project_No','Manufacturer'];const vals=fields.map(k=>String(x[k]??''));const joined=vals.join(' ').toUpperCase();let score=0,hit=0;const rr=ocrCompact(raw);if(rr&&ocrCompact(joined).includes(rr))score+=1.0;for(const t of tokens){const tc=ocrCompact(t);if(!tc)continue;let best=0;for(const v of vals){const vc=ocrCompact(v);if(!vc)continue;if(vc.includes(tc)||tc.includes(vc))best=Math.max(best,Math.min(tc.length,vc.length)/Math.max(tc.length,vc.length)*0.98);else if(tc.length>=4&&vc.length>=4)best=Math.max(best,similarity(tc,vc));}if(best>=0.55){hit++;score+=best}}return tokens.length?score/(tokens.length+1):score}
 function renderList(fromOCR=false){const raw=(document.getElementById('q').value||'').trim(),tokens=raw.toUpperCase().split(/[^A-Z0-9.-]+/).filter(t=>t.length>=2),fp=fProject.value,fg=fGrade.value,fs=fStatus.value,fy=fYard.value;let base=data.filter(x=>!fp||x.Project_Code==fp).filter(x=>!fg||x.Grade==fg).filter(x=>!fs||x.Material_Status==fs).filter(x=>!fy||x.Yard_ID==fy);if(!raw){list.innerHTML=base.slice(0,300).map(x=>card(x)).join('')||'<div class="card">No data.</div>';return}const exact=base.filter(x=>{const blob=['Material_ID','Plate_No','Heat_No','Coil_No','PO_ID','MTC_No','Grade','Thickness_mm','Width_mm','Length_mm','Project_Code','Project_No','Manufacturer'].map(k=>String(x[k]??'').toUpperCase()).join(' ');return tokens.length?tokens.every(t=>blob.includes(t)):blob.includes(raw.toUpperCase())});if(exact.length){list.innerHTML=exact.slice(0,300).map(x=>card(x)).join('');return}const ranked=base.map(x=>({x,s:searchScore(x,raw,tokens)})).filter(z=>z.s>=0.35).sort((a,b)=>b.s-a.s).slice(0,30);list.innerHTML=ranked.length?`<div class="card"><b>${fromOCR?'🔎 OCR gần đúng':'🔎 Kết quả gần đúng'}</b><div class="muted">Không có exact match. Hiển thị các vật tư có mức tương đồng cao nhất.</div></div>`+ranked.map(z=>card(z.x,z.s)).join(''):'<div class="card"><b>Không tìm thấy vật tư.</b><br><span class="muted">Thử Plate / Heat / Coil / Material ID hoặc bấm một mã OCR ở phía trên.</span></div>'}
 function detail(id){current=id;let x=data.find(z=>z.Material_ID===id);if(!x)return;const fields=[['Material ID',x.Material_ID],['Status',x.Material_Status],['Plate No.',x.Plate_No],['Heat No.',x.Heat_No],['Coil No.',x.Coil_No],['Grade',x.Grade],['Specification',x.Material_Specification],['Size',`${x.Thickness_mm||'-'} × ${x.Width_mm||'-'} × ${x.Length_mm||'-'} mm`],['Qty',x.Qty_Pcs],['Weight kg',x.Weight_Kg],['Project',x.Project_Code],['Project No.',x.Project_No],['PO',x.PO_ID],['Yard',x.Yard_ID],['Manufacturer',x.Manufacturer],['MTC',x.MTC_No],['MRIR',x.MRIR_No],['Inspection Date',x.Inspection_Date],['Remark',x.Remark]];detailBody.innerHTML=`<div class="actions"><button class="secondary" onclick="show('search')">← Search</button><button onclick="inspect('${escapeAttr(id)}')">✓ Check</button><button onclick="takePhoto('${escapeAttr(id)}')">📷 Photo</button><button onclick="updateMat('${escapeAttr(id)}')">✎ Update</button></div><div class="card"><h2>${escapeHtml(x.Material_ID)}</h2><span class="badge">${escapeHtml(x.Material_Status||'')}</span><div class="detail-grid" style="margin-top:10px">${fields.map(([k,v])=>`<div class="kv"><b>${escapeHtml(k)}</b>${escapeHtml(v==null||v===''?'-':v)}</div>`).join('')}</div></div><div class="card"><b>Inspection / Update History</b>${hist.filter(h=>h.Material_ID===id).slice(-15).reverse().map(h=>`<p class="muted">${escapeHtml(h.Updated_Date||'')} • ${escapeHtml(h.Field_Name||h.Action||'')} : ${escapeHtml(h.Old_Value||'')} → ${escapeHtml(h.New_Value||'')}</p>`).join('')||'<p class="muted">No local updates</p>'}</div>`;show('detail')}
