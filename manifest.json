@@ -1,9 +1,9 @@
 {
-  "name": "Raw Material Yard V2.0",
-  "short_name": "RM Yard",
+  "name": "Raw Material Yard V3.0.2",
+  "short_name": "RM Yard Voice",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#f4f6f8",
   "theme_color": "#0f172a",
-  "description": "Raw material yard management, OCR search and field inspection for QA/QC."
+  "description": "Raw material yard management and live voice material identification for QA/QC."
 }

@@ -1,5 +1,5 @@
 <!doctype html><html lang="vi"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1"><title>Raw Material Yard V2.0 Mobile</title>
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>Raw Material Yard V3.0.3 Voice Material Identification</title>
 <link rel="manifest" href="manifest.json">
 <style>
 *{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:#f4f6f8;color:#17202a}
@@ -14,9 +14,9 @@ select,input,textarea{padding:11px;border:1px solid #cbd5e1;border-radius:10px;w
 .item .top{display:flex;justify-content:space-between}.muted{color:#64748b;font-size:12px}.badge{display:inline-block;padding:4px 8px;border-radius:999px;background:#e2e8f0;font-size:11px}
 .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}.check{display:grid;grid-template-columns:1fr 110px;gap:8px;align-items:center;margin:8px 0}
 nav{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid #ddd;display:flex;justify-content:center;gap:8px;padding:8px;z-index:6}
-nav button{background:#fff;color:#17202a;border:1px solid #ddd;padding:8px 12px}.btn{display:inline-block;padding:11px 14px;border-radius:10px;background:#0f172a;color:#fff;cursor:pointer}.ocr-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.chip{border:1px solid #cbd5e1;background:#fff;color:#17202a;border-radius:999px;padding:7px 10px;font-size:12px;cursor:pointer}.match{font-size:11px;padding:3px 7px;border-radius:999px;background:#dcfce7;color:#166534}.warn{background:#fef3c7;color:#92400e}.detail-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.kv{background:#f8fafc;border-radius:10px;padding:9px}.kv b{display:block;font-size:11px;color:#64748b;margin-bottom:3px}.camera-frame{width:100%;max-height:52vh;object-fit:cover;background:#111;border-radius:12px}.ocr-workspace{background:#0f172a;border-radius:14px;padding:8px;touch-action:none;user-select:none}.ocr-canvas{display:block;width:100%;height:auto;border-radius:10px;background:#111;touch-action:none}.ocr-toolbar{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.ocr-stat{font-size:12px;color:#cbd5e1}.ocr-preview{width:100%;max-height:220px;object-fit:contain;background:#111;border-radius:10px;margin-top:8px}.preset{background:#e2e8f0;color:#17202a}.preset.active{background:#0f172a;color:#fff}@media(max-width:700px){.grid{grid-template-columns:repeat(2,1fr)}.filters{grid-template-columns:1fr 1fr}.row{grid-template-columns:1fr}.detail-grid{grid-template-columns:1fr 1fr}button{padding:11px 12px}}
+nav button{background:#fff;color:#17202a;border:1px solid #ddd;padding:8px 12px}.btn{display:inline-block;padding:11px 14px;border-radius:10px;background:#0f172a;color:#fff;cursor:pointer}.voice-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.chip{border:1px solid #cbd5e1;background:#fff;color:#17202a;border-radius:999px;padding:7px 10px;font-size:12px;cursor:pointer}.match{font-size:11px;padding:3px 7px;border-radius:999px;background:#dcfce7;color:#166534}.warn{background:#fef3c7;color:#92400e}.detail-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.kv{background:#f8fafc;border-radius:10px;padding:9px}.kv b{display:block;font-size:11px;color:#64748b;margin-bottom:3px}.camera-frame{width:100%;max-height:52vh;object-fit:cover;background:#111;border-radius:12px}@media(max-width:700px){.grid{grid-template-columns:repeat(2,1fr)}.filters{grid-template-columns:1fr 1fr}.row{grid-template-columns:1fr}.detail-grid{grid-template-columns:1fr 1fr}button{padding:11px 12px}}
 </style></head><body>
-<header><h1>Raw Material Yard</h1><div class="sub">V3.0 • Voice Material Identification + OCR • QA/QC Material Yard Management & Inspection</div></header>
+<header><h1>Raw Material Yard</h1><div class="sub">V3.0.3 • Live Voice Material Identification • QA/QC Material Yard Management & Inspection</div></header>
 <main>
 <section id="home" class="view active"><div class="actions"><button onclick="show('search')">🔎 Search</button><button onclick="openScan()">📷 Scan</button><button id="btnLinkExcel" onclick="linkExcel()">🔗 Change Excel</button><button id="btnRefreshExcel" onclick="refreshExcel()">🔄 Refresh Excel</button><button id="btnDriveFolder" onclick="chooseDriveFolder()">📁 Set Google Drive Folder</button><button id="btnPublishDrive" onclick="publishToDrive()">📤 Publish to Drive</button><button id="btnRefreshMobile" onclick="refreshMobileData()">🔄 Refresh Data</button><button class="secondary" onclick="exportData()">Export</button></div>
 <div class="card" style="margin:10px 0"><b>Data Source</b><div id="syncInfo" class="muted">Checking...</div><div id="excelInfo" class="muted" style="margin-top:6px"></div><div id="modeInfo" class="muted" style="margin-top:6px"></div><div id="driveFolderInfo" class="muted" style="margin-top:6px"></div></div><div class="grid"><div class="card kpi">Materials<b id="kTotal">0</b></div><div class="card kpi">Plates<b id="kPlate">0</b></div><div class="card kpi">Weight kg<b id="kWeight">0</b></div><div class="card kpi">Pending<b id="kPending">0</b></div></div>
@@ -25,12 +25,12 @@ nav button{background:#fff;color:#17202a;border:1px solid #ddd;padding:8px 12px}
 <div class="actions"><button class="secondary" onclick="show('home')">← Home</button></div>
 <div class="card">
 <h2>Search Material</h2>
-<div class="muted">Nhập mã, đọc bằng giọng nói hoặc tải hình ảnh marking để tìm vật tư.</div>
+<div class="muted">Nhập mã hoặc đọc trực tiếp bằng giọng nói để tìm vật tư. Không sử dụng OCR hình ảnh.</div>
 <input id="q" class="search" placeholder="Plate / Heat / Coil / Material ID / PO / MTC..." oninput="renderList()">
 <div class="card voice-card" style="margin-top:10px">
   <h3 style="margin-top:0">🎤 Đọc mã vật tư bằng giọng nói</h3>
-  <div class="muted">Không dùng OCR ảnh. Chọn loại mã, bấm micro và đọc từng số/chữ. App chuẩn hóa rồi đối chiếu Material Master.</div>
-  <div class="ocr-actions" style="margin-top:8px">
+  <div class="muted">🎤 Live Voice: app hiển thị kết quả ngay khi bạn đang đọc, tự chuẩn hóa và đối chiếu Material Master 1.455 vật tư. Khi đạt exact match, app có thể tự dừng.</div>
+  <div class="voice-actions" style="margin-top:8px">
     <label class="muted" style="display:inline-flex;align-items:center;gap:6px">Loại mã
       <select id="voiceFieldMode" style="width:auto">
         <option value="plate">Plate / Heat / Coil</option>
@@ -46,40 +46,7 @@ nav button{background:#fff;color:#17202a;border:1px solid #ddd;padding:8px 12px}
   <div id="voiceMatches" style="margin-top:8px"></div>
 </div>
 
-<div class="actions">
-<button onclick="renderList()">🔍 Search</button>
-<label style="display:inline-block"><input id="imageSearch" type="file" accept="image/*" style="display:none" onchange="openOCRWorkspace(this.files[0])"><span class="btn" style="display:inline-block">🖼️ Chọn ảnh & OCR</span></label>
-<button class="secondary" onclick="openOCRWorkspaceFromCamera()">📷 Chụp & chọn vùng</button>
-</div>
-<div class="ocr-actions"><button class="secondary" onclick="clearSearch()">✕ Clear</button><button class="secondary" onclick="rerunOCR()">🔁 OCR lại vùng</button></div>
-<div id="ocrBox" class="muted"></div><div id="ocrCandidates" class="ocr-actions"></div>
-<div id="ocrWorkspace" class="card" style="display:none;margin-top:10px">
-  <h3 style="margin-top:0">🎯 Chọn vị trí OCR</h3>
-  <div class="muted">Kéo ngón tay/chuột trên ảnh để khoanh đúng vùng marking. Tọa độ được quy đổi theo kích thước ảnh gốc, nên vùng chọn bám đúng vị trí click. OCR dùng nhiều PSM + preprocessing và đối chiếu Material Master để giảm lỗi ký tự.</div>
-  <div class="ocr-actions"><label class="muted" style="display:inline-flex;align-items:center;gap:6px">Loại marking <select id="ocrFieldMode" style="width:auto"><option value="general">Tự động</option><option value="plate">Plate / Coil / Heat No.</option><option value="grade">Grade / Spec</option></select></label></div>
-  <div class="ocr-actions">
-    <button class="preset active" id="ocrPresetCustom" onclick="setOCRPreset('custom')">✋ Tùy chọn</button>
-    <button class="preset" onclick="setOCRPreset('center')">▣ Trung tâm</button>
-    <button class="preset" onclick="setOCRPreset('top')">⬆ Phía trên</button>
-    <button class="preset" onclick="setOCRPreset('bottom')">⬇ Phía dưới</button>
-    <button class="preset" onclick="setOCRPreset('full')">▣ Toàn ảnh</button>
-  </div>
-  <div class="ocr-workspace"><canvas id="ocrCanvas" class="ocr-canvas"></canvas><div id="ocrStat" class="ocr-stat">Chưa chọn vùng</div></div>
-  <div class="ocr-toolbar">
-    <button onclick="runSelectedOCR()">🔎 OCR vùng chọn</button>
-    <button class="secondary" onclick="runFullImageOCR()">🧾 OCR toàn ảnh</button>
-    <button class="secondary" onclick="resetOCRSelection()">↺ Chọn lại</button>
-    <button class="secondary" onclick="closeOCRWorkspace()">✕ Đóng</button>
-  </div>
-  <img id="ocrCropPreview" class="ocr-preview" style="display:none">
-</div>
-
-<div id="ocrVerification" class="card" style="display:none;margin-top:10px">
-  <h3 style="margin-top:0">🎯 V2.0 • Xác thực marking với Material Master</h3>
-  <div id="ocrEngineStatus" class="muted"></div>
-  <div id="ocrConsensus" class="muted" style="margin-top:6px"></div>
-  <div id="ocrMatches"></div>
-</div>
+<div class="actions"><button onclick="renderList()">🔍 Search</button><button class="secondary" onclick="clearSearch()">✕ Clear</button></div>
 <div class="filters">
 <select id="fProject" onchange="renderList()"><option value="">All projects</option></select>
 <select id="fGrade" onchange="renderList()"><option value="">All grades</option></select>
@@ -93,12 +60,12 @@ nav button{background:#fff;color:#17202a;border:1px solid #ddd;padding:8px 12px}
 <div class="actions"><button class="secondary" onclick="show('search')">← Search</button></div>
 <div class="card">
 <h2>Scan</h2>
-<div class="muted">Quét QR/barcode bằng camera. Với marking chữ/số, dùng Capture để OCR và tự tìm vật tư gần đúng.</div>
+<div class="muted">Quét QR/barcode bằng camera để lấy mã trực tiếp. Với marking chữ/số, dùng 🎤 Đọc mã vật tư bằng giọng nói.</div>
 <video id="scanVideo" class="camera-frame" autoplay playsinline></video>
 <div class="actions">
 <button onclick="startScan()">▶ Start Camera</button>
 <button class="secondary" onclick="stopScan()">■ Stop</button>
-<button onclick="captureScanImage()">📷 Capture</button>
+
 </div>
 <canvas id="scanCanvas" style="display:none"></canvas>
 <div id="scanResult" class="muted"></div>
@@ -249,7 +216,6 @@ function normalizeRawRows(rows){if(!rows.length)return [];const headers=rows[0].
 }
 </script>
 
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <script>
 let data=[], current=null, localDataVersion=localStorage.rm_data_version||'',inspections=JSON.parse(localStorage.rm_inspections||'[]'),hist=JSON.parse(localStorage.rm_history||'[]'),photos=JSON.parse(localStorage.rm_photos||'[]');
 
@@ -278,7 +244,7 @@ async function startScan(){
       },500);
     }
   }catch(e){
-    scanResult.textContent='Không mở được camera. Hãy cấp quyền Camera hoặc dùng Search → Tải hình ảnh.';
+    scanResult.textContent='Không mở được camera. Hãy cấp quyền Camera hoặc dùng Search → đọc mã bằng Voice.';
   }
 }
 function stopScan(){
@@ -286,398 +252,60 @@ function stopScan(){
   if(scanStream){scanStream.getTracks().forEach(t=>t.stop());scanStream=null;}
   if(scanVideo) scanVideo.srcObject=null;
 }
-function captureScanImage(){
-  if(!scanStream){alert('Start Camera trước.');return;}
-  const c=scanCanvas, v=scanVideo;
-  c.width=v.videoWidth; c.height=v.videoHeight;
-  c.getContext('2d').drawImage(v,0,0,c.width,c.height);
-  c.toBlob(blob=>ocrImage(blob),'image/jpeg',0.92);
-}
-function normalizeOCRText(s){
-  return String(s||'').normalize('NFKC').replace(/[“”‘’]/g,'"').replace(/[|¦]/g,'I').replace(/[—–−]/g,'-').replace(/[^\w\-./#×x ]+/g,' ').replace(/\s+/g,' ').trim();
-}
-function ocrCompact(s){return normalizeOCRText(s).toUpperCase().replace(/[^A-Z0-9]/g,'')}
-function levenshtein(a,b){a=String(a);b=String(b);if(a===b)return 0;if(!a)return b.length;if(!b)return a.length;let prev=Array.from({length:b.length+1},(_,i)=>i);for(let i=1;i<=a.length;i++){let cur=[i];for(let j=1;j<=b.length;j++)cur[j]=Math.min(cur[j-1]+1,prev[j]+1,prev[j-1]+(a[i-1]===b[j-1]?0:1));prev=cur}return prev[b.length]}
-function similarity(a,b){a=ocrCompact(a);b=ocrCompact(b);if(!a||!b)return 0;if(a===b)return 1;if(a.includes(b)||b.includes(a))return Math.min(a.length,b.length)/Math.max(a.length,b.length)*0.95;return Math.max(0,1-levenshtein(a,b)/Math.max(a.length,b.length))}
-
-let ocrImageSource=null, ocrImgEl=null, ocrSelection={x:0,y:0,w:0,h:0}, ocrDrag=null, ocrObjectURL=null, ocrPreset='custom';
-const ocrCanvas=document.getElementById('ocrCanvas');
-const ocrCtx=ocrCanvas?ocrCanvas.getContext('2d'):null;
-function clamp(n,a,b){return Math.max(a,Math.min(b,n))}
-function setOCRPreset(mode){ocrPreset=mode;document.querySelectorAll('.preset').forEach(b=>b.classList.remove('active'));const ids={custom:'ocrPresetCustom'};if(ids[mode])document.getElementById(ids[mode])?.classList.add('active');if(mode!=='custom'&&ocrImgEl){const w=ocrImgEl.naturalWidth,h=ocrImgEl.naturalHeight;let x=0,y=0,rw=w,rh=h;if(mode==='center'){rw=Math.round(w*.55);rh=Math.round(h*.40);x=Math.round((w-rw)/2);y=Math.round((h-rh)/2)}else if(mode==='top'){rh=Math.round(h*.38);y=0}else if(mode==='bottom'){rh=Math.round(h*.38);y=h-rh}ocrSelection={x,y,w:rw,h:rh};drawOCRCanvas();}}
-function openOCRWorkspace(file){if(!file)return;loadOCRImage(file)}
-function openOCRWorkspaceFromCamera(){
-  if(!scanStream){show('scan');startScan().then(()=>setTimeout(()=>{if(scanStream)captureScanToWorkspace();},500));return;}
-  captureScanToWorkspace();
-}
-function captureScanToWorkspace(){if(!scanStream){alert('Hãy mở Camera trước.');return;}const v=scanVideo,c=document.createElement('canvas');c.width=v.videoWidth;c.height=v.videoHeight;c.getContext('2d').drawImage(v,0,0,c.width,c.height);c.toBlob(b=>{if(b)loadOCRImage(b);},'image/jpeg',0.95);}
-function loadOCRImage(file){
-  show('search');
-  closeOCRWorkspace(false);
-  ocrImageSource=file;
-  if(ocrObjectURL)URL.revokeObjectURL(ocrObjectURL);
-  ocrObjectURL=URL.createObjectURL(file);
-  ocrImgEl=new Image();
-  ocrImgEl.onload=()=>{const max=1600,scale=Math.min(1,max/ocrImgEl.naturalWidth);ocrCanvas.width=Math.max(1,Math.round(ocrImgEl.naturalWidth*scale));ocrCanvas.height=Math.max(1,Math.round(ocrImgEl.naturalHeight*scale));ocrSelection={x:0,y:0,w:ocrImgEl.naturalWidth,h:ocrImgEl.naturalHeight};ocrPreset='full';document.getElementById('ocrWorkspace').style.display='block';setOCRPreset('full');drawOCRCanvas();};
-  ocrImgEl.onerror=()=>{alert('Không đọc được ảnh OCR.');};
-  ocrImgEl.src=ocrObjectURL;
-}
-function canvasPoint(ev){
-  if(!ocrImgEl)return {x:0,y:0};
-  const r=ocrCanvas.getBoundingClientRect();
-  // IMPORTANT: convert from the ACTUAL displayed canvas size (CSS pixels)
-  // to the source image's natural pixel coordinates.
-  // Using ocrCanvas.width/height here is wrong when the canvas is resized
-  // by CSS (for example 1600px internal width displayed at 390px on mobile).
-  const displayW=Math.max(1,r.width);
-  const displayH=Math.max(1,r.height);
-  const sx=ocrImgEl.naturalWidth/displayW;
-  const sy=ocrImgEl.naturalHeight/displayH;
-  return {
-    x:clamp((ev.clientX-r.left)*sx,0,ocrImgEl.naturalWidth),
-    y:clamp((ev.clientY-r.top)*sy,0,ocrImgEl.naturalHeight)
-  };
-}
-function drawOCRCanvas(){if(!ocrCtx||!ocrImgEl)return;const cw=ocrCanvas.width,ch=ocrCanvas.height;ocrCtx.clearRect(0,0,cw,ch);ocrCtx.drawImage(ocrImgEl,0,0,cw,ch);const sx=cw/ocrImgEl.naturalWidth,sy=ch/ocrImgEl.naturalHeight;const r={x:ocrSelection.x*sx,y:ocrSelection.y*sy,w:ocrSelection.w*sx,h:ocrSelection.h*sy};ocrCtx.fillStyle='rgba(0,0,0,.48)';ocrCtx.fillRect(0,0,cw,ch);ocrCtx.clearRect(r.x,r.y,r.w,r.h);ocrCtx.drawImage(ocrImgEl,ocrSelection.x,ocrSelection.y,ocrSelection.w,ocrSelection.h,r.x,r.y,r.w,r.h);ocrCtx.strokeStyle='#22c55e';ocrCtx.lineWidth=Math.max(3,cw/500);ocrCtx.strokeRect(r.x,r.y,r.w,r.h);ocrCtx.fillStyle='#22c55e';ocrCtx.fillRect(r.x,r.y,Math.min(r.w,110),28);ocrCtx.fillStyle='#fff';ocrCtx.font='bold 14px Arial';ocrCtx.fillText('OCR AREA',r.x+8,r.y+19);document.getElementById('ocrStat').textContent=`Vùng: ${Math.round(ocrSelection.w)} × ${Math.round(ocrSelection.h)} px • kéo để chọn vị trí`;}
-function beginOCRDrag(ev){if(!ocrImgEl)return;ev.preventDefault();ocrDrag=canvasPoint(ev);ocrSelection={x:ocrDrag.x,y:ocrDrag.y,w:0,h:0};ocrCanvas.setPointerCapture?.(ev.pointerId);}
-function moveOCRDrag(ev){if(!ocrDrag||!ocrImgEl)return;ev.preventDefault();const p=canvasPoint(ev);const x=Math.min(ocrDrag.x,p.x),y=Math.min(ocrDrag.y,p.y),w=Math.abs(p.x-ocrDrag.x),h=Math.abs(p.y-ocrDrag.y);ocrSelection={x,y,w,h};drawOCRCanvas();}
-function endOCRDrag(ev){if(!ocrDrag)return;const p=canvasPoint(ev);if(ocrSelection.w<20||ocrSelection.h<10){ocrSelection={x:0,y:0,w:ocrImgEl.naturalWidth,h:ocrImgEl.naturalHeight};}ocrDrag=null;drawOCRCanvas();}
-if(ocrCanvas){ocrCanvas.addEventListener('pointerdown',beginOCRDrag);ocrCanvas.addEventListener('pointermove',moveOCRDrag);ocrCanvas.addEventListener('pointerup',endOCRDrag);ocrCanvas.addEventListener('pointercancel',endOCRDrag);}
-function ocrScaleForROI(){
-  // Mobile OCR should keep the input just large enough for Tesseract.
-  // Oversized canvases make pixel preprocessing and WASM recognition slower.
-  const shortSide=Math.max(1,Math.min(ocrSelection.w,ocrSelection.h));
-  if(shortSide<90) return 3.5;
-  if(shortSide<180) return 3;
-  if(shortSide<360) return 2.5;
-  return 2;
-}
-function cropSelectionCanvas(preprocess='original', scaleOverride=null, padRatio=0.04, fast=false){
-  if(!ocrImgEl) throw new Error('Ảnh OCR chưa sẵn sàng');
-  const padX=ocrSelection.w*padRatio, padY=ocrSelection.h*padRatio;
-  const sx=Math.max(0,ocrSelection.x-padX), sy=Math.max(0,ocrSelection.y-padY);
-  const ex=Math.min(ocrImgEl.naturalWidth,ocrSelection.x+ocrSelection.w+padX);
-  const ey=Math.min(ocrImgEl.naturalHeight,ocrSelection.y+ocrSelection.h+padY);
-  const sw=Math.max(1,ex-sx), sh=Math.max(1,ey-sy);
-  const scale=scaleOverride||ocrScaleForROI();
-  // Mobile fast path caps the raster size aggressively. OCR accuracy is
-  // recovered by database matching rather than by huge input images.
-  const maxW=fast?1800:3200, maxH=fast?1000:2400;
-  const w=Math.min(maxW,Math.max(280,Math.round(sw*scale))),h=Math.min(maxH,Math.max(90,Math.round(sh*scale)));
-  const c=document.createElement('canvas');c.width=w;c.height=h;
-  const ctx=c.getContext('2d',{willReadFrequently:true});
-  ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality=fast?'medium':'high';
-  ctx.drawImage(ocrImgEl,sx,sy,sw,sh,0,0,w,h);
-  if(preprocess==='original') return Promise.resolve(c);
-  const im=ctx.getImageData(0,0,w,h),d=im.data;
-  for(let i=0;i<d.length;i+=4){
-    let y=.299*d[i]+.587*d[i+1]+.114*d[i+2];
-    if(preprocess==='contrast') y=Math.max(0,Math.min(255,(y-128)*1.65+128));
-    else if(preprocess==='threshold140') y=y>140?255:0;
-    else if(preprocess==='threshold160') y=y>160?255:0;
-    d[i]=d[i+1]=d[i+2]=y;
-  }
-  ctx.putImageData(im,0,0);
-  return Promise.resolve(c);
-}
-function ocrTextTokens(text){
-  const raw=normalizeOCRText(text).toUpperCase();
-  const tokens=raw.split(/[^A-Z0-9.-]+/).filter(t=>t.length>=3);
-  const compact=tokens.map(t=>t.replace(/[^A-Z0-9]/g,''));
-  const long=compact.filter(t=>t.length>=6);
-  const numeric=long.filter(t=>/^[0-9OILSZB]+$/.test(t));
-  return {raw,tokens,compact,long,numeric};
-}
-function normalizeMarkingToken(s){
-  let t=String(s||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
-  if(!t)return '';
-  // OCR confusions are corrected only for numeric-like candidates; never mutate Grade blindly.
-  if(/^[0-9OILSZB]+$/.test(t)) t=t.replace(/O/g,'0').replace(/[IL]/g,'1').replace(/S/g,'5').replace(/B/g,'8').replace(/Z/g,'2');
-  return t;
-}
-function fieldSimilarity(a,b,numeric=false){
-  const aa=numeric?normalizeMarkingToken(a):ocrCompact(a),bb=numeric?normalizeMarkingToken(b):ocrCompact(b);
-  if(!aa||!bb)return 0;if(aa===bb)return 1;
-  if(aa.includes(bb)||bb.includes(aa)){
-    const ratio=Math.min(aa.length,bb.length)/Math.max(aa.length,bb.length);
-    // MTC numbers are often printed as an extended marking, e.g.
-    // OCR/marking JT4Z121427 while the Master stores MTC_No JT4Z121.
-    // Treat a short alphanumeric prefix match as strong evidence, but do
-    // not let it override a full Plate/Heat/Coil match.
-    if(!numeric && Math.min(aa.length,bb.length)>=5 && ratio>=0.55) return Math.max(0.86,ratio*0.995);
-    return ratio*0.985;
-  }
-  // Steel marking OCR often inserts/deletes one character. For numeric IDs,
-  // compare the best same-length sliding window before falling back to Levenshtein.
-  if(numeric && Math.abs(aa.length-bb.length)<=2){
-    const longer=aa.length>=bb.length?aa:bb, shorter=aa.length>=bb.length?bb:aa;
-    let best=0;
-    if(longer.length>shorter.length){
-      // Try a sliding window AND one-character deletion. The latter is useful
-      // for OCR outputs such as 265306072300 vs master 26530072100.
-      for(let i=0;i<=longer.length-shorter.length;i++){
-        const part=longer.slice(i,i+shorter.length);
-        best=Math.max(best,similarity(part,shorter));
-      }
-      if(longer.length===shorter.length+1){
-        for(let i=0;i<longer.length;i++){
-          const part=longer.slice(0,i)+longer.slice(i+1);
-          best=Math.max(best,similarity(part,shorter));
-        }
-      }
-    }
-    if(best>0)return Math.max(best,similarity(aa,bb));
-  }
-  return similarity(aa,bb);
-}
-function isNumericMarkingMode(){
-  const mode=document.getElementById('ocrFieldMode')?.value||'general';
-  return mode==='plate' || mode==='general';
-}
-function extractOCRCandidates(texts){
-  const map=new Map();
-  texts.forEach((t,idx)=>{
-    const z=ocrTextTokens(t);
-    [...z.long,...z.numeric].forEach(tok=>{
-      const n=normalizeMarkingToken(tok); if(n.length<5)return;
-      const k=n; const rec=map.get(k)||{token:k,count:0,sources:[]};rec.count++;rec.sources.push(idx);map.set(k,rec);
-    });
-    z.tokens.filter(t=>/^[A-Z0-9-]{5,}$/.test(t)).forEach(tok=>{
-      const n=normalizeMarkingToken(tok);if(n.length<5)return;const rec=map.get(n)||{token:n,count:0,sources:[]};rec.count++;rec.sources.push(idx);map.set(n,rec);
-    });
-  });
-  return [...map.values()].sort((a,b)=>b.count-a.count||b.token.length-a.token.length);
-}
-function rankMaterialMatches(texts){
-  const candidates=extractOCRCandidates(texts);
-  const raw=ocrTextTokens(texts.join(' ')).raw;
-  const mode=document.getElementById('ocrFieldMode')?.value||'general';
-  const results=[];
-  const specs=mode==='plate'
-    ? [['Plate_No',.74,true],['Heat_No',.70,true],['Coil_No',.70,true],['Material_ID',.58,true],['Project_No',.18,true],['MTC_No',.18,false],['Grade',.10,false]]
-    : mode==='grade'
-    ? [['Grade',.68,false],['Material_Specification',.38,false],['Plate_No',.42,true],['Heat_No',.28,true],['MTC_No',.18,false]]
-    : [['Plate_No',.72,true],['Heat_No',.68,true],['Coil_No',.68,true],['MTC_No',.78,false],['Material_ID',.56,true],['Grade',.14,false],['Material_Specification',.10,false],['Project_No',.16,true]];
-  for(const x of data){
-    const fieldBest={};
-    for(const [field,weight,numField] of specs){
-      let best=0,bestToken='';
-      const value=String(x[field]??''); if(!value)continue;
-      for(const c of candidates){
-        const sim=fieldSimilarity(c.token,value,numField);
-        if(sim>best){best=sim;bestToken=c.token;}
-      }
-      fieldBest[field]={sim:best,token:bestToken,weight};
-    }
-    let primary=0,primaryField='';
-    for(const [field,weight] of specs){
-      const z=fieldBest[field];if(!z)continue;
-      const s=z.sim*z.weight*(z.sim>=.97?1.06:1);
-      if(s>primary){primary=s;primaryField=field;}
-    }
-    let support=0;
-    const grade=String(x.Grade||'').toUpperCase().replace(/\s+/g,'');
-    if(grade && ocrCompact(raw).includes(ocrCompact(grade))) support+=.12;
-    const rawNums=(raw.match(/\d+(?:\.\d+)?/g)||[]);
-    const dimFields=[x.Thickness_mm,x.Width_mm,x.Length_mm].filter(v=>v!==null&&v!==undefined&&v!=='').map(v=>String(v));
-    let dimHits=0;for(const n of dimFields){if(rawNums.some(r=>fieldSimilarity(r,n,true)>=.98))dimHits++;}
-    support+=Math.min(.15,dimHits*.05);
-    const plate=fieldBest.Plate_No?.sim||0, heat=fieldBest.Heat_No?.sim||0, coil=fieldBest.Coil_No?.sim||0, mid=fieldBest.Material_ID?.sim||0, mtc=fieldBest.MTC_No?.sim||0;
-    // Primary identity evidence dominates; supporting fields break ties.
-    let confidence=Math.min(1,Math.max(primary,primary*0.82+support));
-    if(Math.max(plate,heat,coil,mid)>=.90) confidence=Math.max(confidence,.78+support);
-    if(Math.max(plate,heat,coil,mid)>=.97) confidence=Math.max(confidence,.90+support);
-    if(plate>=.995 || heat>=.995 || coil>=.995) confidence=Math.max(confidence,.96+support);
-    // MTC_No can be printed as an extended marking. A strong MTC prefix
-    // match is useful when the user deliberately selects only that marking.
-    if(mtc>=.86) confidence=Math.max(confidence,.82+support);
-    if(mtc>=.96) confidence=Math.max(confidence,.90+support);
-    const evidence=[];for(const [field,z] of Object.entries(fieldBest)){if(z.sim>=.80)evidence.push({field,token:z.token,value:String(x[field]??''),sim:z.sim});}
-    if(confidence>=.34)results.push({x,score:Math.min(1,confidence),bestField:primaryField,evidence:evidence.slice(0,6)});
-  }
-  return results.sort((a,b)=>b.score-a.score).slice(0,8);
-}
-function confidenceLabel(s){return s>=.82?'🟢 HIGH':s>=.62?'🟡 REVIEW':'🔴 LOW';}
-function renderOCRVerification(texts){
-  const box=document.getElementById('ocrVerification');if(!box)return;
-  box.style.display='block';
-  const candidates=extractOCRCandidates(texts);
-  const mode=document.getElementById('ocrFieldMode')?.value||'general';
-  const top=candidates.slice(0,10).map(c=>`${c.token}${c.count>1?' ×'+c.count:''}`).join(' • ');
-  const matches=rankMaterialMatches(texts);
-  document.getElementById('ocrEngineStatus').innerHTML=`<b>Multi-OCR:</b> ${texts.length} lượt • <b>Scale ROI:</b> ${ocrScaleForROI()}× • <b>Mode:</b> ${escapeHtml(mode)} • <b>Ứng viên:</b> ${escapeHtml(top||'Không có')}`;
-  document.getElementById('ocrConsensus').innerHTML=matches.length?`<b>Database verification:</b> ${matches.length} ứng viên từ ${data.length.toLocaleString()} Materials.`:'Không tìm được ứng viên đủ tin cậy trong Material Master.';
-  const el=document.getElementById('ocrMatches');
-  if(!matches.length){el.innerHTML='<div class="card" style="margin-top:8px"><b>🔴 Không đủ dữ liệu để xác thực</b><br><span class="muted">Hãy mở rộng ROI vừa đủ chữ, chụp gần hơn hoặc chọn lại vùng marking.</span></div>';return;}
-  el.innerHTML=matches.map((m,i)=>{
-    const x=m.x, score=Math.round(m.score*100);const main=x.Plate_No||x.Heat_No||x.Coil_No||x.MTC_No||x.Material_ID||'-';const ev=m.evidence?.find(e=>e.field===m.bestField)||m.evidence?.[0];const evText=ev?`OCR <b>${escapeHtml(ev.token)}</b> → ${escapeHtml(ev.field)} <b>${escapeHtml(ev.value)}</b> (${Math.round(ev.sim*100)}%)`:'';
-    return `<div class="item" style="margin-top:8px" onclick="applyOCRMaterial('${escapeAttr(x.Material_ID)}')"><div class="top"><b>${i===0?'🎯 ':''}${escapeHtml(x.Material_ID)}</b><span class="match">${confidenceLabel(m.score)} ${score}%</span></div><div><b>Marking:</b> ${escapeHtml(main)}</div><div class="muted">${escapeHtml(x.Grade||'')} • ${escapeHtml(x.Thickness_mm||'')} × ${escapeHtml(x.Width_mm||'')} × ${escapeHtml(x.Length_mm||'')} mm • ${escapeHtml(x.Heat_No||'')}</div><div class="muted">${evText}</div></div>`;
-  }).join('');
-}
-function applyOCRMaterial(id){
-  const x=data.find(z=>z.Material_ID===id);if(!x)return;
-  const best=x.Plate_No||x.Heat_No||x.Coil_No||x.Material_ID||'';
-  q.value=best;renderList(true);detail(id);
-}
-let ocrWorkerPromise=null;
-let ocrWorker=null;
-let ocrWorkerInitError=null;
-let ocrWorkerReadyAt=0;
-let ocrWorkerParamsKey='';
-async function getOCRWorker(){
-  if(ocrWorker)return ocrWorker;
-  if(ocrWorkerInitError)throw ocrWorkerInitError;
-  if(!ocrWorkerPromise){
-    ocrWorkerPromise=Tesseract.createWorker('eng',1,{
-      logger:m=>{
-        if(m.status==='loading tesseract core'&&m.progress)ocrBox.textContent='Đang chuẩn bị OCR • '+Math.round(m.progress*100)+'%';
-        else if(m.status==='loading language traineddata'&&m.progress)ocrBox.textContent='Đang tải OCR • '+Math.round(m.progress*100)+'%';
-        else if(m.status==='recognizing text'&&m.progress)ocrBox.textContent='OCR • '+Math.round(m.progress*100)+'%';
-      }
-    }).then(async w=>{
-      // Set stable parameters once. Re-setting parameters before every OCR
-      // costs extra worker messaging and is unnecessary for the fast path.
-      await w.setParameters({
-        tessedit_pageseg_mode:'7',
-        preserve_interword_spaces:'1',
-        user_defined_dpi:'300',
-        tessedit_char_whitelist:'0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ.-'
-      });
-      ocrWorker=w; ocrWorkerReadyAt=Date.now(); return w;
-    }).catch(e=>{ocrWorkerInitError=e;throw e});
-  }
-  return ocrWorkerPromise;
-}
-async function warmOCRWorker(){
-  if(!isMobileOCR())return;
-  try{
-    await getOCRWorker();
-    const el=document.getElementById('ocrEngineStatus');
-    if(el)el.textContent='OCR engine sẵn sàng • Mobile Ultra Fast OCR';
-  }catch(e){ /* OCR will retry on demand */ }
-}
-async function runOCRVariant(blob,label,whitelist='',psm=7){
-  const worker=await getOCRWorker();
-  const params={tessedit_pageseg_mode:String(psm),preserve_interword_spaces:'1',user_defined_dpi:'300'};
-  if(whitelist)params.tessedit_char_whitelist=whitelist;
-  const paramsKey=JSON.stringify(params);
-  if(paramsKey!==ocrWorkerParamsKey){await worker.setParameters(params);ocrWorkerParamsKey=paramsKey;}
-  const result=await worker.recognize(blob);
-  return normalizeOCRText(result.data.text||'');
-}
-function isMobileOCR(){
-  return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.maxTouchPoints>1 && window.innerWidth<900);
-}
-function inferOCRWhitelist(){
-  const mode=document.getElementById('ocrFieldMode')?.value||'general';
-  if(mode==='plate')return '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ-';
-  if(mode==='grade')return '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ.-';
-  if(mode==='general')return '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ.-';
-  return '';
-}
-function bestVerifiedIdentity(matches){
-  if(!matches||!matches.length)return null;
-  const top=matches[0], second=matches[1];
-  const margin=top.score-(second?.score||0);
-  if(top.score>=.78 && (margin>=.055 || top.score>=.93))return top;
-  return null;
-}
-async function executeOCR(preferred='selection'){
-  if(!ocrImgEl)return;
-  const mobileFast=isMobileOCR();
-  ocrBox.innerHTML='<b>V2.0.5 • '+(mobileFast?'Mobile Ultra Fast OCR':'PC Full Accuracy OCR')+' • Database Verification...</b>';ocrCandidates.innerHTML='';
-  const verify=document.getElementById('ocrVerification');if(verify)verify.style.display='none';
-  try{
-    // Mobile target: one warm-worker OCR pass. A second pass is used only
-    // when the first result cannot be verified. This replaces the previous
-    // 3-pass mobile ensemble and is the main latency reduction.
-    const modes=mobileFast?['original']:['original','contrast','sharpen','clahe','threshold110','threshold140','threshold170','adaptive','invert'];
-    const psms=mobileFast?[7]:[7,8,13];
-    const texts=[];
-    const whitelist=inferOCRWhitelist();
-    const fieldMode=document.getElementById('ocrFieldMode')?.value||'general';
-    const pad=mobileFast?0.035:((fieldMode==='plate')?0.025:0.06);
-    let verifiedEarly=null;
-    for(const mode of modes){
-      for(const psm of psms){
-        const b=await cropSelectionCanvas(mode,null,pad,mobileFast);
-        const t=await runOCRVariant(b,mode.toUpperCase()+' / PSM'+psm,whitelist,psm);
-        if(t)texts.push(t);
-        if(mobileFast){
-          const early=rankMaterialMatches(texts);
-          if(early[0] && early[0].score>=.88){verifiedEarly=early[0];break;}
-        }
-      }
-      if(mobileFast && verifiedEarly)break;
-    }
-    // If the single fast pass is weak, use exactly one cheap contrast retry.
-    if(mobileFast && !verifiedEarly){
-      const b=await cropSelectionCanvas('contrast',null,pad,true);
-      const t=await runOCRVariant(b,'CONTRAST / PSM7',whitelist,7);
-      if(t)texts.push(t);
-    }
-    const cand=extractOCRCandidates(texts);
-    const matches=rankMaterialMatches(texts);
-    const verified=bestVerifiedIdentity(matches)||verifiedEarly;
-    const verifiedEvidence=verified?.evidence?.find(e=>e.field===verified.bestField);
-    const consensus=verifiedEvidence?.token || cand[0]?.token || normalizeOCRText(texts[0]||'');
-    const combined=texts.join(' | ');
-    const prev=document.getElementById('ocrCropPreview');if(prev){const pb=await cropSelectionCanvas('original',null,pad,mobileFast);prev.src=URL.createObjectURL(await canvasToBlob(pb,mobileFast?'image/jpeg':'image/png',mobileFast?.88:undefined));prev.style.display='block';}
-    const verifyNote=verified?`<br><span class="muted">🎯 DB verified: ${escapeHtml(verified.x.Material_ID)} • ${Math.round(verified.score*100)}%</span>`:'';
-    ocrBox.innerHTML=`<b>OCR consensus:</b> ${escapeHtml(consensus||'Không đọc được')}${verifyNote}<br><span class="muted">Raw: ${escapeHtml(combined.slice(0,900))}</span>`;
-    if(consensus){q.value=consensus;renderList(true);showOCRCandidates(consensus);}
-    renderOCRVerification(texts);
-  }catch(e){ocrBox.textContent='OCR lỗi: '+e.message+' • Hãy chọn ROI lớn hơn hoặc chụp gần hơn.';}
-}
-function canvasToBlob(canvas,type='image/png',quality){
-  return new Promise((resolve,reject)=>canvas.toBlob(b=>b?resolve(b):reject(new Error('Cannot create OCR image')),type,quality));
-}
-function runSelectedOCR(){executeOCR('selection')}
-function runFullImageOCR(){if(!ocrImgEl)return;ocrSelection={x:0,y:0,w:ocrImgEl.naturalWidth,h:ocrImgEl.naturalHeight};drawOCRCanvas();executeOCR('full')}
-function resetOCRSelection(){if(!ocrImgEl)return;ocrSelection={x:0,y:0,w:ocrImgEl.naturalWidth,h:ocrImgEl.naturalHeight};ocrPreset='custom';drawOCRCanvas()}
-function closeOCRWorkspace(clear=true){const box=document.getElementById('ocrWorkspace');if(box)box.style.display='none';const v=document.getElementById('ocrVerification');if(v)v.style.display='none';if(clear){ocrImageSource=null;ocrImgEl=null;if(ocrObjectURL){URL.revokeObjectURL(ocrObjectURL);ocrObjectURL=null;}}}
-function imageVariant(file,mode){return new Promise((resolve,reject)=>{const img=new Image();const url=URL.createObjectURL(file);img.onload=()=>{const maxW=2400,scale=Math.min(1,maxW/img.naturalWidth),w=Math.max(1,Math.round(img.naturalWidth*scale)),h=Math.max(1,Math.round(img.naturalHeight*scale));const c=document.createElement('canvas');c.width=w;c.height=h;const ctx=c.getContext('2d',{willReadFrequently:true});ctx.drawImage(img,0,0,w,h);if(mode!=='original'){const im=ctx.getImageData(0,0,w,h),d=im.data;for(let i=0;i<d.length;i+=4){let y=0.299*d[i]+0.587*d[i+1]+0.114*d[i+2];if(mode==='threshold')y=y>150?255:0;else if(mode==='contrast')y=Math.max(0,Math.min(255,(y-128)*1.8+128));d[i]=d[i+1]=d[i+2]=y}ctx.putImageData(im,0,0)}c.toBlob(b=>{URL.revokeObjectURL(url);b?resolve(b):reject(new Error('Cannot create image'))},'image/jpeg',0.94)};img.onerror=()=>{URL.revokeObjectURL(url);reject(new Error('Cannot read image'))};img.src=url})}
-async function ocrImage(file){if(!file)return;loadOCRImage(file)}
-function showOCRCandidates(text){const raw=normalizeOCRText(text);const toks=raw.toUpperCase().split(/[^A-Z0-9.-]+/).filter(t=>t.length>=3);const uniq=[...new Set(toks)].slice(0,16);ocrCandidates.innerHTML=uniq.map(t=>`<button class="chip" onclick="useOCRToken('${escapeAttr(t)}')">${escapeHtml(t)}</button>`).join('')}
-function useOCRToken(t){q.value=t;renderList(true)}
-
-// ===== V3.0 VOICE MATERIAL IDENTIFICATION =====
+// ===== V3.0.3 LIVE VOICE MATERIAL IDENTIFICATION =====
 let voiceRecognition=null, voiceListening=false, voiceLastTranscript='', voiceFinalTranscript='';
-const VI_DIGITS={
-  'không':'0','zero':'0','một':'1','mot':'1','mốt':'1','một.':'1','hai':'2','ba':'3','bốn':'4','bon':'4','tư':'4','tu':'4','năm':'5','nam':'5','lăm':'5','sáu':'6','sau':'6','bảy':'7','bay':'7','bẩy':'7','tám':'8','tam':'8','chín':'9','chin':'9'
-};
+const VI_DIGITS={khong:'0',zero:'0',mot:'1',hai:'2',ba:'3',bon:'4',tu:'4',nam:'5',lam:'5',sau:'6',bay:'7',bayy:'7',tam:'8',chin:'9'};
 const EN_DIGITS={zero:'0',oh:'0',one:'1',two:'2',three:'3',four:'4',five:'5',six:'6',seven:'7',eight:'8',nine:'9'};
 const LETTERS={
-  'a':'A','ay':'A','aay':'A','alpha':'A','b':'B','bee':'B','be':'B','c':'C','see':'C','sea':'C','cee':'C','d':'D','dee':'D','e':'E','ee':'E','f':'F','eff':'F','g':'G','gee':'G','h':'H','aitch':'H','i':'I','eye':'I','j':'J','jay':'J','k':'K','kay':'K','l':'L','el':'L','m':'M','em':'M','n':'N','en':'N','o':'O','oh':'O','p':'P','pee':'P','q':'Q','cue':'Q','r':'R','ar':'R','s':'S','ess':'S','t':'T','tee':'T','u':'U','you':'U','v':'V','vee':'V','w':'W','doubleyou':'W','x':'X','ex':'X','y':'Y','why':'Y','z':'Z','zee':'Z','zed':'Z'
+  // English letter names
+  'a':'A','ay':'A','aay':'A','alpha':'A','b':'B','bee':'B','be':'B','c':'C','see':'C','sea':'C','cee':'C','d':'D','dee':'D','e':'E','ee':'E','f':'F','eff':'F','g':'G','gee':'G','h':'H','aitch':'H','i':'I','eye':'I','j':'J','jay':'J','k':'K','kay':'K','l':'L','el':'L','m':'M','em':'M','n':'N','en':'N','o':'O','oh':'O','p':'P','pee':'P','q':'Q','cue':'Q','r':'R','ar':'R','s':'S','ess':'S','t':'T','tee':'T','tea':'T','u':'U','you':'U','v':'V','vee':'V','w':'W','doubleyou':'W','x':'X','ex':'X','y':'Y','why':'Y','z':'Z','zee':'Z','zed':'Z',
+  // Vietnamese letter names / common speech-recognition variants
+  'a':'A','a':'A','be':'B','beeh':'B','be':'B','xê':'X','xe':'X','xêy':'X','xay':'X','cê':'C','ce':'C','dê':'D','de':'D','đê':'D','đe':'D','ê':'E','e':'E','ép':'F','ep':'F','ép':'F','gê':'G','ge':'G','hát':'H','hat':'H','i':'I','ca':'K','ka':'K','cây':'K','kay':'K','en':'N','em':'M','ô':'O','o':'O','pê':'P','pe':'P','quy':'Q','qui':'Q','a':'A','ét':'S','et':'S','tê':'T','te':'T','u':'U','vê':'V','ve':'V','vê':'V','dấp liêu':'W','doubleyou':'W','ích':'X','ich':'X','i grec':'Y','igrec':'Y','dét':'Z','det':'Z','zê':'Z','ze':'Z','dét':'Z','giây':'J','giay':'J','giai':'J','jay':'J'
 };
 function voiceSetStatus(msg,ok=false){const el=document.getElementById('voiceStatus');if(el){el.textContent=msg;el.style.color=ok?'#166534':''}}
 function normalizeVoiceText(text,mode){
-  let s=String(text||'').toLowerCase().normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').replace(/[^a-z0-9\\s.-]/g,' ').replace(/\\s+/g,' ').trim();
+  let s=String(text||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9\s.-]/g,' ').replace(/\s+/g,' ').trim();
   if(!s)return '';
-  // Preserve literal alphanumeric strings first.
   const raw=s.replace(/[ .-]/g,'').toUpperCase();
   if(mode==='plate'){
     const toks=s.split(' '); let out='';
-    for(const t of toks){ if(VI_DIGITS[t]!=null) out+=VI_DIGITS[t]; else if(EN_DIGITS[t]!=null) out+=EN_DIGITS[t]; else if(/^\\d+$/.test(t)) out+=t; }
+    for(const t of toks){ if(VI_DIGITS[t]!=null) out+=VI_DIGITS[t]; else if(EN_DIGITS[t]!=null) out+=EN_DIGITS[t]; else if(/^\d+$/.test(t)) out+=t; }
     if(out.length>=4) return out;
     return raw.replace(/[^0-9]/g,'');
   }
   if(mode==='mtc'){
     const toks=s.split(' '); let out='';
     for(let i=0;i<toks.length;i++){
-      if(toks[i]==='double' && toks[i+1]==='you'){out+='W';i++;continue;}
-      if(LETTERS[toks[i]]) out+=LETTERS[toks[i]];
-      else if(EN_DIGITS[toks[i]]!=null) out+=EN_DIGITS[toks[i]];
-      else if(VI_DIGITS[toks[i]]!=null) out+=VI_DIGITS[toks[i]];
-      else if(/^\\d+$/.test(toks[i])) out+=toks[i];
-      else if(/^[a-z0-9]+$/.test(toks[i]) && toks[i].length<=3) out+=toks[i].toUpperCase();
+      const t=toks[i];
+      if(t==='double' && toks[i+1]==='you'){out+='W';i++;continue;}
+      if(LETTERS[t]) {out+=LETTERS[t]; continue;}
+      if(EN_DIGITS[t]!=null) {out+=EN_DIGITS[t]; continue;}
+      if(VI_DIGITS[t]!=null) {out+=VI_DIGITS[t]; continue;}
+      if(/^\d+$/.test(t)) {out+=t; continue;}
+      // Speech engines sometimes return an entire code as one compact token, e.g. jt4z121.
+      // Preserve it when it is already a plausible alphanumeric identifier.
+      if(/^[a-z0-9]+$/.test(t) && /\d/.test(t) && /[a-z]/.test(t)) {out+=t.toUpperCase(); continue;}
+      // Common combined letter-name forms.
+      const compact=t.replace(/[^a-z0-9]/g,'');
+      if(LETTERS[compact]) out+=LETTERS[compact];
     }
-    return out;
+    return out.toUpperCase().replace(/[^A-Z0-9]/g,'');
   }
-  // General: prefer a compact alphanumeric interpretation.
   const p=normalizeVoiceText(text,'plate');
   if(p.length>=6)return p;
   return normalizeVoiceText(text,'mtc');
+}
+function normalizeVoiceCandidates(text,mode){
+  const vals=new Set();
+  const direct=normalizeVoiceText(text,mode); if(direct) vals.add(direct);
+  // Try the other language's common transcript interpretation as a fallback.
+  if(mode==='mtc'){
+    const alt=String(text||'').replace(/[.,]/g,' ');
+    const a=normalizeVoiceText(alt,'mtc'); if(a) vals.add(a);
+    const compact=String(text||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
+    if(/[A-Z]/.test(compact)&&/\d/.test(compact)&&compact.length>=4) vals.add(compact);
+  }
+  return [...vals];
 }
 function voiceFieldMatches(value,mode){
   const q=String(value||'').toUpperCase().replace(/[^A-Z0-9]/g,''); if(q.length<2)return [];
@@ -705,28 +333,88 @@ function selectVoiceMaterial(id){
 function setupVoiceRecognition(){
   const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
   if(!SR){voiceSetStatus('⚠️ Trình duyệt này không hỗ trợ Speech Recognition. Hãy dùng Chrome/Edge trên Android/PC.');return null;}
-  const r=new SR(); r.continuous=false; r.interimResults=true; r.maxAlternatives=3;
-  r.onstart=()=>{voiceListening=true;voiceFinalTranscript='';voiceLastTranscript='';voiceSetStatus('🎤 Đang nghe... hãy đọc từng số/chữ, rõ và liên tục.');const b=document.getElementById('voiceBtn');if(b)b.textContent='🔴 Đang nghe';};
-  r.onresult=(ev)=>{let interim='',final='';for(let i=ev.resultIndex;i<ev.results.length;i++){const t=ev.results[i][0].transcript;if(ev.results[i].isFinal)final+=t;else interim+=t;}voiceFinalTranscript+=final;voiceLastTranscript=voiceFinalTranscript||interim;const mode=(document.getElementById('voiceFieldMode')||{}).value||'plate';const norm=normalizeVoiceText(voiceFinalTranscript||interim,mode);const out=document.getElementById('voiceResult');if(out)out.value=norm;renderVoiceMatches(norm,mode);};
-  r.onerror=(ev)=>{voiceListening=false;voiceSetStatus('🔴 Voice error: '+ev.error+'. Bạn có thể nhập trực tiếp.');const b=document.getElementById('voiceBtn');if(b)b.textContent='🎤 Bắt đầu đọc';};
-  r.onend=()=>{voiceListening=false;const b=document.getElementById('voiceBtn');if(b)b.textContent='🎤 Bắt đầu đọc';const mode=(document.getElementById('voiceFieldMode')||{}).value||'plate';const val=document.getElementById('voiceResult')?.value||'';if(val){renderVoiceMatches(val,mode);voiceSetStatus('✓ Đã nhận: '+val,true);}};
+  const r=new SR();
+  r.continuous=true;
+  r.interimResults=true;
+  r.maxAlternatives=3;
+  r.onstart=()=>{
+    voiceListening=true; voiceFinalTranscript=''; voiceLastTranscript='';
+    voiceSetStatus('🎤 Đang nghe... đọc liên tục từng số/chữ. Kết quả cập nhật ngay.');
+    const b=document.getElementById('voiceBtn');if(b)b.textContent='🔴 Đang nghe';
+  };
+  r.onresult=(ev)=>{
+    let interims=[], finals=[];
+    for(let i=ev.resultIndex;i<ev.results.length;i++){
+      const res=ev.results[i];
+      for(let a=0;a<Math.min(res.length,3);a++){
+        const t=res[a]?.transcript||'';
+        if(!t)continue;
+        (res.isFinal?finals:interims).push(t);
+      }
+    }
+    // Keep the best alternative from each result rather than trusting only [0].
+    const finalText=finals.length?finals[0]:'';
+    const interimText=interims.length?interims[0]:'';
+    voiceFinalTranscript += finalText;
+    const live=(voiceFinalTranscript+' '+interimText).trim();
+    voiceLastTranscript=live;
+    const mode=document.getElementById('voiceFieldMode')?.value||'plate';
+    const candidates=[];
+    [finalText,interimText,...finals,...interims].forEach(t=>normalizeVoiceCandidates(t,mode).forEach(v=>{if(v&&!candidates.includes(v))candidates.push(v)}));
+    normalizeVoiceCandidates(live,mode).forEach(v=>{if(v&&!candidates.includes(v))candidates.push(v)});
+    const ranked=[];
+    for(const norm of candidates){
+      const m=voiceFieldMatches(norm,mode);
+      if(m.length) ranked.push({norm,m});
+    }
+    ranked.sort((a,b)=>(b.m[0]?.score||0)-(a.m[0]?.score||0));
+    const best=ranked[0];
+    const norm=best?.norm || normalizeVoiceText(live,mode);
+    const out=document.getElementById('voiceResult');if(out)out.value=norm;
+    renderVoiceMatches(norm,mode);
+    const m=best?.m || voiceFieldMatches(norm,mode);
+    if(m.length){
+      const top=m[0], second=m[1];
+      // Exact string match on a unique field is strong enough to stop.
+      const exact=top.score>=.995 && (!second || top.score-second.score>=.015);
+      if(exact && norm.length>=4){
+        voiceSetStatus('🎯 Exact match: '+String(top.x.Material_ID||'')+' • '+norm,true);
+        selectVoiceMaterial(String(top.x.Material_ID||''));
+        setTimeout(()=>stopVoiceInput(),100);
+      }else voiceSetStatus('🎤 '+norm+' • '+m.length+' kết quả đang khớp...');
+    }else if(norm) voiceSetStatus('🎤 '+norm+' • đang tìm trong Material Master...');
+  };
+  r.onerror=(ev)=>{
+    voiceListening=false;
+    const msg=ev.error==='no-speech'?'Chưa nghe rõ. Hãy đọc lại.':ev.error==='network'?'Speech Recognition báo network. Hãy kiểm tra kết nối hoặc dùng Chrome/Edge HTTPS.':'Voice error: '+ev.error;
+    voiceSetStatus('🔴 '+msg);
+    const b=document.getElementById('voiceBtn');if(b)b.textContent='🎤 Bắt đầu đọc';
+  };
+  r.onend=()=>{
+    if(voiceListening){
+      try{setTimeout(()=>{if(voiceListening)r.start();},150);}catch(e){}
+      return;
+    }
+    const b=document.getElementById('voiceBtn');if(b)b.textContent='🎤 Bắt đầu đọc';
+    const val=document.getElementById('voiceResult')?.value||'';
+    if(val)voiceSetStatus('✓ Đã nhận: '+val,true);
+  };
   return r;
 }
 function toggleVoiceInput(){
   if(voiceListening){stopVoiceInput();return;}
-  if(!voiceRecognition)voiceRecognition=setupVoiceRecognition(); if(!voiceRecognition)return;
-  const mode=(document.getElementById('voiceFieldMode')||{}).value||'plate';
-  voiceRecognition.lang=mode==='mtc'?'en-US':'vi-VN';
+  if(!voiceRecognition)voiceRecognition=setupVoiceRecognition();if(!voiceRecognition)return;
+  const mode=document.getElementById('voiceFieldMode')?.value||'plate';
+  voiceRecognition.lang='vi-VN';
   try{voiceRecognition.start();}catch(e){voiceSetStatus('⚠️ Micro đang bận. Hãy bấm Dừng rồi thử lại.');}
 }
-function stopVoiceInput(){try{if(voiceRecognition&&voiceListening)voiceRecognition.stop();}catch(e){} voiceListening=false;const b=document.getElementById('voiceBtn');if(b)b.textContent='🎤 Bắt đầu đọc';}
+function stopVoiceInput(){voiceListening=false;try{if(voiceRecognition)voiceRecognition.stop();}catch(e){}const b=document.getElementById('voiceBtn');if(b)b.textContent='🎤 Bắt đầu đọc';}
 function initVoiceUI(){
-  const inp=document.getElementById('voiceResult'); if(inp)inp.addEventListener('input',()=>{const mode=document.getElementById('voiceFieldMode')?.value||'plate';inp.value=inp.value.toUpperCase().replace(/[^A-Z0-9]/g,'');renderVoiceMatches(inp.value,mode);});
-  const sel=document.getElementById('voiceFieldMode'); if(sel)sel.addEventListener('change',()=>{const mode=sel.value;if(mode==='mtc')voiceSetStatus('MTC: đọc từng chữ và số, ví dụ J T 4 Z 1 2 1.');else if(mode==='plate')voiceSetStatus('Plate/Heat: đọc từng số, ví dụ hai sáu năm ba không không...');else voiceSetStatus('Tự động: app sẽ thử nhận dạng số hoặc mã chữ-số.');});
+  const inp=document.getElementById('voiceResult');if(inp)inp.addEventListener('input',()=>{const mode=document.getElementById('voiceFieldMode')?.value||'plate';inp.value=inp.value.toUpperCase().replace(/[^A-Z0-9]/g,'');renderVoiceMatches(inp.value,mode);});
+  const sel=document.getElementById('voiceFieldMode');if(sel)sel.addEventListener('change',()=>{const mode=sel.value;if(mode==='mtc')voiceSetStatus('MTC: đọc từng chữ và số, ví dụ J T 4 Z 1 2 1; có thể đọc tên chữ tiếng Việt hoặc tiếng Anh.');else if(mode==='plate')voiceSetStatus('Plate/Heat/Coil: đọc từng số, ví dụ hai sáu năm ba không không...');else voiceSetStatus('Tự động: app sẽ thử nhận dạng số hoặc mã chữ-số.');});
 }
 
-function clearSearch(){q.value='';ocrBox.textContent='';ocrCandidates.innerHTML='';closeOCRWorkspace();renderList()}
-function rerunOCR(){if(ocrImgEl)runSelectedOCR();else{const inp=document.getElementById('imageSearch');if(inp&&inp.files&&inp.files[0])ocrImage(inp.files[0]);else alert('Hãy chọn ảnh marking trước.')}}
+function clearSearch(){q.value='';renderList()}
 function escapeAttr(s){return String(s||'').replace(/&/g,'&amp;').replace(/'/g,'&#39;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
 function escapeHtml(s){
   return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
@@ -852,7 +540,7 @@ async function init(){
   try{
     // Mobile: load cached master first, then try network refresh.
     if(IS_MOBILE_MODE){
-      document.getElementById('modeInfo').textContent='📱 Mobile Field • Google Drive Sync • Offline Cache • OCR';
+      document.getElementById('modeInfo').textContent='📱 Mobile Field • Google Drive Sync • Offline Cache • Live Voice';
       const savedMobile=localStorage.rm_mobile_data;
       if(savedMobile){
         masterData=JSON.parse(savedMobile);data=applyFieldOverrides(masterData);localDataVersion=localStorage.rm_data_version||'MOBILE-CACHE';initFiltersOnly();renderHome();renderList();showSyncStatus('🟢 Offline cache • '+data.length+' materials');
@@ -903,14 +591,19 @@ function renderHome(){
   if(recent) recent.innerHTML=data.slice(-5).reverse().map(x=>card(x)).join('')||'<div class="muted">No materials.</div>';
 }
 
+function compactValue(s){return String(s||'').normalize('NFKC').toUpperCase().replace(/[^A-Z0-9]/g,'')}
+function levenshtein(a,b){a=String(a);b=String(b);if(a===b)return 0;if(!a)return b.length;if(!b)return a.length;let prev=Array.from({length:b.length+1},(_,i)=>i);for(let i=1;i<=a.length;i++){let cur=[i];for(let j=1;j<=b.length;j++)cur[j]=Math.min(cur[j-1]+1,prev[j]+1,prev[j-1]+(a[i-1]===b[j-1]?0:1));prev=cur}return prev[b.length]}
+function similarity(a,b){a=compactValue(a);b=compactValue(b);if(!a||!b)return 0;if(a===b)return 1;if(a.includes(b)||b.includes(a))return Math.min(a.length,b.length)/Math.max(a.length,b.length)*.95;return Math.max(0,1-levenshtein(a,b)/Math.max(a.length,b.length))}
+function normalizeMarkingToken(s){let t=compactValue(s);if(!t)return '';if(/^[0-9OILSZB]+$/.test(t))t=t.replace(/O/g,'0').replace(/[IL]/g,'1').replace(/S/g,'5').replace(/B/g,'8').replace(/Z/g,'2');return t}
+function fieldSimilarity(a,b,numeric=false){const aa=numeric?normalizeMarkingToken(a):compactValue(a),bb=numeric?normalizeMarkingToken(b):compactValue(b);if(!aa||!bb)return 0;if(aa===bb)return 1;if(aa.includes(bb)||bb.includes(aa)){const r=Math.min(aa.length,bb.length)/Math.max(aa.length,bb.length);return r*.98}return similarity(aa,bb)}
 function searchScore(x,raw,tokens){
   const fields=['Material_ID','Plate_No','Heat_No','Coil_No','PO_ID','MTC_No','Grade','Thickness_mm','Width_mm','Length_mm','Project_Code','Project_No','Manufacturer'];
   const vals=fields.map(k=>String(x[k]??''));let score=0;
-  const rr=ocrCompact(raw);if(rr){for(const f of ['Plate_No','Heat_No','Coil_No','Material_ID']){const v=String(x[f]??'');if(v&&fieldSimilarity(rr,v,true)>=.90)score=Math.max(score,.95)}}
-  for(const t of tokens){const tc=normalizeMarkingToken(t);if(!tc)continue;let best=0;for(const v of vals){const vc=ocrCompact(v);if(!vc)continue;const num=/^[0-9]+$/.test(tc)&&/^[0-9]+$/.test(ocrCompact(v));best=Math.max(best,fieldSimilarity(tc,vc,num));}score+=best*.55;}
+  const rr=compactValue(raw);if(rr){for(const f of ['Plate_No','Heat_No','Coil_No','Material_ID']){const v=String(x[f]??'');if(v&&fieldSimilarity(rr,v,true)>=.90)score=Math.max(score,.95)}}
+  for(const t of tokens){const tc=normalizeMarkingToken(t);if(!tc)continue;let best=0;for(const v of vals){const vc=compactValue(v);if(!vc)continue;const num=/^[0-9]+$/.test(tc)&&/^[0-9]+$/.test(compactValue(v));best=Math.max(best,fieldSimilarity(tc,vc,num));}score+=best*.55;}
   return tokens.length?Math.min(1,score/tokens.length):score;
 }
-function renderList(fromOCR=false){const raw=(document.getElementById('q').value||'').trim(),tokens=raw.toUpperCase().split(/[^A-Z0-9.-]+/).filter(t=>t.length>=2),fp=fProject.value,fg=fGrade.value,fs=fStatus.value,fy=fYard.value;let base=data.filter(x=>!fp||x.Project_Code==fp).filter(x=>!fg||x.Grade==fg).filter(x=>!fs||x.Material_Status==fs).filter(x=>!fy||x.Yard_ID==fy);if(!raw){list.innerHTML=base.slice(0,300).map(x=>card(x)).join('')||'<div class="card">No data.</div>';return}const exact=base.filter(x=>{const blob=['Material_ID','Plate_No','Heat_No','Coil_No','PO_ID','MTC_No','Grade','Thickness_mm','Width_mm','Length_mm','Project_Code','Project_No','Manufacturer'].map(k=>String(x[k]??'').toUpperCase()).join(' ');return tokens.length?tokens.every(t=>blob.includes(t)):blob.includes(raw.toUpperCase())});if(exact.length){list.innerHTML=exact.slice(0,300).map(x=>card(x)).join('');return}const ranked=base.map(x=>({x,s:searchScore(x,raw,tokens)})).filter(z=>z.s>=0.35).sort((a,b)=>b.s-a.s).slice(0,30);list.innerHTML=ranked.length?`<div class="card"><b>${fromOCR?'🔎 OCR gần đúng':'🔎 Kết quả gần đúng'}</b><div class="muted">Không có exact match. Hiển thị các vật tư có mức tương đồng cao nhất.</div></div>`+ranked.map(z=>card(z.x,z.s)).join(''):'<div class="card"><b>Không tìm thấy vật tư.</b><br><span class="muted">Thử Plate / Heat / Coil / Material ID hoặc bấm một mã OCR ở phía trên.</span></div>'}
+function renderList(){const raw=(document.getElementById('q').value||'').trim(),tokens=raw.toUpperCase().split(/[^A-Z0-9.-]+/).filter(t=>t.length>=2),fp=fProject.value,fg=fGrade.value,fs=fStatus.value,fy=fYard.value;let base=data.filter(x=>!fp||x.Project_Code==fp).filter(x=>!fg||x.Grade==fg).filter(x=>!fs||x.Material_Status==fs).filter(x=>!fy||x.Yard_ID==fy);if(!raw){list.innerHTML=base.slice(0,300).map(x=>card(x)).join('')||'<div class="card">No data.</div>';return}const exact=base.filter(x=>{const blob=['Material_ID','Plate_No','Heat_No','Coil_No','PO_ID','MTC_No','Grade','Thickness_mm','Width_mm','Length_mm','Project_Code','Project_No','Manufacturer'].map(k=>String(x[k]??'').toUpperCase()).join(' ');return tokens.length?tokens.every(t=>blob.includes(t)):blob.includes(raw.toUpperCase())});if(exact.length){list.innerHTML=exact.slice(0,300).map(x=>card(x)).join('');return}const ranked=base.map(x=>({x,s:searchScore(x,raw,tokens)})).filter(z=>z.s>=0.35).sort((a,b)=>b.s-a.s).slice(0,30);list.innerHTML=ranked.length?`<div class="card"><b>🔎 Kết quả gần đúng</b><div class="muted">Không có exact match. Hiển thị các vật tư có mức tương đồng cao nhất.</div></div>`+ranked.map(z=>card(z.x,z.s)).join(''):'<div class="card"><b>Không tìm thấy vật tư.</b><br><span class="muted">Thử Plate / Heat / Coil / Material ID hoặc kiểm tra lại mã Plate / Heat / Coil / MTC.</span></div>'}
 function detail(id){current=id;let x=data.find(z=>z.Material_ID===id);if(!x)return;const fields=[['Material ID',x.Material_ID],['Status',x.Material_Status],['Plate No.',x.Plate_No],['Heat No.',x.Heat_No],['Coil No.',x.Coil_No],['Grade',x.Grade],['Specification',x.Material_Specification],['Size',`${x.Thickness_mm||'-'} × ${x.Width_mm||'-'} × ${x.Length_mm||'-'} mm`],['Qty',x.Qty_Pcs],['Weight kg',x.Weight_Kg],['Project',x.Project_Code],['Project No.',x.Project_No],['PO',x.PO_ID],['Yard',x.Yard_ID],['Manufacturer',x.Manufacturer],['MTC',x.MTC_No],['MRIR',x.MRIR_No],['Inspection Date',x.Inspection_Date],['Remark',x.Remark]];detailBody.innerHTML=`<div class="actions"><button class="secondary" onclick="show('search')">← Search</button><button onclick="inspect('${escapeAttr(id)}')">✓ Check</button><button onclick="takePhoto('${escapeAttr(id)}')">📷 Photo</button><button onclick="updateMat('${escapeAttr(id)}')">✎ Update</button></div><div class="card"><h2>${escapeHtml(x.Material_ID)}</h2><span class="badge">${escapeHtml(x.Material_Status||'')}</span><div class="detail-grid" style="margin-top:10px">${fields.map(([k,v])=>`<div class="kv"><b>${escapeHtml(k)}</b>${escapeHtml(v==null||v===''?'-':v)}</div>`).join('')}</div></div><div class="card"><b>Inspection / Update History</b>${hist.filter(h=>h.Material_ID===id).slice(-15).reverse().map(h=>`<p class="muted">${escapeHtml(h.Updated_Date||'')} • ${escapeHtml(h.Field_Name||h.Action||'')} : ${escapeHtml(h.Old_Value||'')} → ${escapeHtml(h.New_Value||'')}</p>`).join('')||'<p class="muted">No local updates</p>'}</div>`;show('detail')}
 function inspect(id){current=id;let fs=['Marking','Grade','Thickness','Width','Length','Surface','Quantity','MTC'];inspectBody.innerHTML=`<div class="actions"><button class="secondary" onclick="detail('${id}')">← Material</button></div><div class="card"><h2>Material Check</h2>${fs.map(f=>`<div class="check"><b>${f}</b><select id="r_${f}"><option>PASS</option><option>HOLD</option><option>FAIL</option><option>N/A</option></select></div>`).join('')}<textarea id="remark" placeholder="Remark (required for HOLD/FAIL)"></textarea><button onclick="saveInspection('${id}')">Save Inspection</button></div>`;show('inspect')}
 function saveInspection(id){let fs=['Marking','Grade','Thickness','Width','Length','Surface','Quantity','MTC'],v=fs.map(f=>document.getElementById('r_'+f).value),o=v.includes('FAIL')?'REJECTED':v.includes('HOLD')?'HOLD':'ACCEPTED',r=remark.value;if((o==='HOLD'||o==='REJECTED')&&!r.trim())return alert('Remark is required');let rec={Inspection_ID:'INS-'+Date.now(),Material_ID:id,Inspection_Date:new Date().toISOString(),Overall_Result:o,Remark:r};fs.forEach((f,i)=>rec[f+'_Result']=v[i]);inspections.push(rec);localStorage.rm_inspections=JSON.stringify(inspections);let x=data.find(z=>z.Material_ID===id),old=x.Material_Status,newStatus=o==='ACCEPTED'?'AVAILABLE':o; x.Material_Status=newStatus; const ov=getFieldOverrides(); ov[id]=Object.assign({},ov[id]||{},{Material_Status:newStatus,Remark:r}); saveFieldOverrides(ov); hist.push({History_ID:'HIS-'+Date.now(),Material_ID:id,Action:'INSPECTION',Field_Name:'Material_Status',Old_Value:old,New_Value:newStatus,Updated_By:'Field User',Updated_Date:new Date().toISOString(),Remark:r});localStorage.rm_history=JSON.stringify(hist);localStorage.rm_material_data=JSON.stringify(data);alert('Inspection saved');detail(id)}
@@ -930,12 +623,5 @@ function setupModeUI(){
 setupModeUI();
 initVoiceUI();
 init();
-// Pre-warm Tesseract on mobile during idle time so the user's first OCR tap
-// does not pay the WASM/language initialization cost. The engine stays in memory.
-if(isMobileOCR()){
-  const warm=()=>warmOCRWorker();
-  if('requestIdleCallback' in window) requestIdleCallback(warm,{timeout:1500});
-  else setTimeout(warm,1200);
-}
 if(!IS_LOCAL_FILE && 'serviceWorker'in navigator)navigator.serviceWorker.register('sw.js');
 </script></body></html>
