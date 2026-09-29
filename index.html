@@ -16,7 +16,7 @@ select,input,textarea{padding:11px;border:1px solid #cbd5e1;border-radius:10px;w
 nav{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid #ddd;display:flex;justify-content:center;gap:8px;padding:8px;z-index:6}
 nav button{background:#fff;color:#17202a;border:1px solid #ddd;padding:8px 12px}.btn{display:inline-block;padding:11px 14px;border-radius:10px;background:#0f172a;color:#fff;cursor:pointer}.ocr-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.chip{border:1px solid #cbd5e1;background:#fff;color:#17202a;border-radius:999px;padding:7px 10px;font-size:12px;cursor:pointer}.match{font-size:11px;padding:3px 7px;border-radius:999px;background:#dcfce7;color:#166534}.warn{background:#fef3c7;color:#92400e}.detail-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.kv{background:#f8fafc;border-radius:10px;padding:9px}.kv b{display:block;font-size:11px;color:#64748b;margin-bottom:3px}.camera-frame{width:100%;max-height:52vh;object-fit:cover;background:#111;border-radius:12px}.ocr-workspace{background:#0f172a;border-radius:14px;padding:8px;touch-action:none;user-select:none}.ocr-canvas{display:block;width:100%;height:auto;border-radius:10px;background:#111;touch-action:none}.ocr-toolbar{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.ocr-stat{font-size:12px;color:#cbd5e1}.ocr-preview{width:100%;max-height:220px;object-fit:contain;background:#111;border-radius:10px;margin-top:8px}.preset{background:#e2e8f0;color:#17202a}.preset.active{background:#0f172a;color:#fff}@media(max-width:700px){.grid{grid-template-columns:repeat(2,1fr)}.filters{grid-template-columns:1fr 1fr}.row{grid-template-columns:1fr}.detail-grid{grid-template-columns:1fr 1fr}button{padding:11px 12px}}
 </style></head><body>
-<header><h1>Raw Material Yard</h1><div class="sub">V2.0.1 • Steel Marking Recognition • ROI Coordinate Fix • QA/QC Material Yard Management & Inspection</div></header>
+<header><h1>Raw Material Yard</h1><div class="sub">V2.0.3 • Steel Marking Recognition • OCR Accuracy + ROI Coordinate Fix • QA/QC Material Yard Management & Inspection</div></header>
 <main>
 <section id="home" class="view active"><div class="actions"><button onclick="show('search')">🔎 Search</button><button onclick="openScan()">📷 Scan</button><button id="btnLinkExcel" onclick="linkExcel()">🔗 Change Excel</button><button id="btnRefreshExcel" onclick="refreshExcel()">🔄 Refresh Excel</button><button id="btnDriveFolder" onclick="chooseDriveFolder()">📁 Set Google Drive Folder</button><button id="btnPublishDrive" onclick="publishToDrive()">📤 Publish to Drive</button><button id="btnRefreshMobile" onclick="refreshMobileData()">🔄 Refresh Data</button><button class="secondary" onclick="exportData()">Export</button></div>
 <div class="card" style="margin:10px 0"><b>Data Source</b><div id="syncInfo" class="muted">Checking...</div><div id="excelInfo" class="muted" style="margin-top:6px"></div><div id="modeInfo" class="muted" style="margin-top:6px"></div><div id="driveFolderInfo" class="muted" style="margin-top:6px"></div></div><div class="grid"><div class="card kpi">Materials<b id="kTotal">0</b></div><div class="card kpi">Plates<b id="kPlate">0</b></div><div class="card kpi">Weight kg<b id="kWeight">0</b></div><div class="card kpi">Pending<b id="kPending">0</b></div></div>
@@ -36,7 +36,7 @@ nav button{background:#fff;color:#17202a;border:1px solid #ddd;padding:8px 12px}
 <div id="ocrBox" class="muted"></div><div id="ocrCandidates" class="ocr-actions"></div>
 <div id="ocrWorkspace" class="card" style="display:none;margin-top:10px">
   <h3 style="margin-top:0">🎯 Chọn vị trí OCR</h3>
-  <div class="muted">Kéo ngón tay/chuột trên ảnh để khoanh đúng vùng marking. Tọa độ được quy đổi theo kích thước ảnh gốc, nên vùng chọn bám đúng vị trí click. Vùng chọn sẽ được phóng to trước khi OCR.</div>
+  <div class="muted">Kéo ngón tay/chuột trên ảnh để khoanh đúng vùng marking. Tọa độ được quy đổi theo kích thước ảnh gốc, nên vùng chọn bám đúng vị trí click. OCR dùng nhiều PSM + preprocessing và đối chiếu Material Master để giảm lỗi ký tự.</div>
   <div class="ocr-actions"><label class="muted" style="display:inline-flex;align-items:center;gap:6px">Loại marking <select id="ocrFieldMode" style="width:auto"><option value="general">Tự động</option><option value="plate">Plate / Coil / Heat No.</option><option value="grade">Grade / Spec</option></select></label></div>
   <div class="ocr-actions">
     <button class="preset active" id="ocrPresetCustom" onclick="setOCRPreset('custom')">✋ Tùy chọn</button>
@@ -391,8 +391,41 @@ function normalizeMarkingToken(s){
 function fieldSimilarity(a,b,numeric=false){
   const aa=numeric?normalizeMarkingToken(a):ocrCompact(a),bb=numeric?normalizeMarkingToken(b):ocrCompact(b);
   if(!aa||!bb)return 0;if(aa===bb)return 1;
-  if(aa.includes(bb)||bb.includes(aa))return Math.min(aa.length,bb.length)/Math.max(aa.length,bb.length)*0.985;
+  if(aa.includes(bb)||bb.includes(aa)){
+    const ratio=Math.min(aa.length,bb.length)/Math.max(aa.length,bb.length);
+    // MTC numbers are often printed as an extended marking, e.g.
+    // OCR/marking JT4Z121427 while the Master stores MTC_No JT4Z121.
+    // Treat a short alphanumeric prefix match as strong evidence, but do
+    // not let it override a full Plate/Heat/Coil match.
+    if(!numeric && Math.min(aa.length,bb.length)>=5 && ratio>=0.55) return Math.max(0.86,ratio*0.995);
+    return ratio*0.985;
+  }
+  // Steel marking OCR often inserts/deletes one character. For numeric IDs,
+  // compare the best same-length sliding window before falling back to Levenshtein.
+  if(numeric && Math.abs(aa.length-bb.length)<=2){
+    const longer=aa.length>=bb.length?aa:bb, shorter=aa.length>=bb.length?bb:aa;
+    let best=0;
+    if(longer.length>shorter.length){
+      // Try a sliding window AND one-character deletion. The latter is useful
+      // for OCR outputs such as 265306072300 vs master 26530072100.
+      for(let i=0;i<=longer.length-shorter.length;i++){
+        const part=longer.slice(i,i+shorter.length);
+        best=Math.max(best,similarity(part,shorter));
+      }
+      if(longer.length===shorter.length+1){
+        for(let i=0;i<longer.length;i++){
+          const part=longer.slice(0,i)+longer.slice(i+1);
+          best=Math.max(best,similarity(part,shorter));
+        }
+      }
+    }
+    if(best>0)return Math.max(best,similarity(aa,bb));
+  }
   return similarity(aa,bb);
+}
+function isNumericMarkingMode(){
+  const mode=document.getElementById('ocrFieldMode')?.value||'general';
+  return mode==='plate' || mode==='general';
 }
 function extractOCRCandidates(texts){
   const map=new Map();
@@ -414,10 +447,10 @@ function rankMaterialMatches(texts){
   const mode=document.getElementById('ocrFieldMode')?.value||'general';
   const results=[];
   const specs=mode==='plate'
-    ? [['Plate_No',.74,true],['Heat_No',.70,true],['Coil_No',.70,true],['Material_ID',.58,true],['Project_No',.18,true],['Grade',.10,false]]
+    ? [['Plate_No',.74,true],['Heat_No',.70,true],['Coil_No',.70,true],['Material_ID',.58,true],['Project_No',.18,true],['MTC_No',.18,false],['Grade',.10,false]]
     : mode==='grade'
-    ? [['Grade',.68,false],['Material_Specification',.38,false],['Plate_No',.42,true],['Heat_No',.28,true]]
-    : [['Plate_No',.72,true],['Heat_No',.68,true],['Coil_No',.68,true],['Material_ID',.56,true],['Grade',.14,false],['Material_Specification',.10,false],['Project_No',.16,true]];
+    ? [['Grade',.68,false],['Material_Specification',.38,false],['Plate_No',.42,true],['Heat_No',.28,true],['MTC_No',.18,false]]
+    : [['Plate_No',.72,true],['Heat_No',.68,true],['Coil_No',.68,true],['MTC_No',.78,false],['Material_ID',.56,true],['Grade',.14,false],['Material_Specification',.10,false],['Project_No',.16,true]];
   for(const x of data){
     const fieldBest={};
     for(const [field,weight,numField] of specs){
@@ -442,12 +475,16 @@ function rankMaterialMatches(texts){
     const dimFields=[x.Thickness_mm,x.Width_mm,x.Length_mm].filter(v=>v!==null&&v!==undefined&&v!=='').map(v=>String(v));
     let dimHits=0;for(const n of dimFields){if(rawNums.some(r=>fieldSimilarity(r,n,true)>=.98))dimHits++;}
     support+=Math.min(.15,dimHits*.05);
-    const plate=fieldBest.Plate_No?.sim||0, heat=fieldBest.Heat_No?.sim||0, coil=fieldBest.Coil_No?.sim||0, mid=fieldBest.Material_ID?.sim||0;
+    const plate=fieldBest.Plate_No?.sim||0, heat=fieldBest.Heat_No?.sim||0, coil=fieldBest.Coil_No?.sim||0, mid=fieldBest.Material_ID?.sim||0, mtc=fieldBest.MTC_No?.sim||0;
     // Primary identity evidence dominates; supporting fields break ties.
     let confidence=Math.min(1,Math.max(primary,primary*0.82+support));
     if(Math.max(plate,heat,coil,mid)>=.90) confidence=Math.max(confidence,.78+support);
     if(Math.max(plate,heat,coil,mid)>=.97) confidence=Math.max(confidence,.90+support);
     if(plate>=.995 || heat>=.995 || coil>=.995) confidence=Math.max(confidence,.96+support);
+    // MTC_No can be printed as an extended marking. A strong MTC prefix
+    // match is useful when the user deliberately selects only that marking.
+    if(mtc>=.86) confidence=Math.max(confidence,.82+support);
+    if(mtc>=.96) confidence=Math.max(confidence,.90+support);
     const evidence=[];for(const [field,z] of Object.entries(fieldBest)){if(z.sim>=.80)evidence.push({field,token:z.token,value:String(x[field]??''),sim:z.sim});}
     if(confidence>=.34)results.push({x,score:Math.min(1,confidence),bestField:primaryField,evidence:evidence.slice(0,6)});
   }
@@ -466,7 +503,7 @@ function renderOCRVerification(texts){
   const el=document.getElementById('ocrMatches');
   if(!matches.length){el.innerHTML='<div class="card" style="margin-top:8px"><b>🔴 Không đủ dữ liệu để xác thực</b><br><span class="muted">Hãy mở rộng ROI vừa đủ chữ, chụp gần hơn hoặc chọn lại vùng marking.</span></div>';return;}
   el.innerHTML=matches.map((m,i)=>{
-    const x=m.x, score=Math.round(m.score*100);const main=x.Plate_No||x.Heat_No||x.Coil_No||x.Material_ID||'-';const ev=m.evidence?.find(e=>e.field===m.bestField)||m.evidence?.[0];const evText=ev?`OCR <b>${escapeHtml(ev.token)}</b> → ${escapeHtml(ev.field)} <b>${escapeHtml(ev.value)}</b> (${Math.round(ev.sim*100)}%)`:'';
+    const x=m.x, score=Math.round(m.score*100);const main=x.Plate_No||x.Heat_No||x.Coil_No||x.MTC_No||x.Material_ID||'-';const ev=m.evidence?.find(e=>e.field===m.bestField)||m.evidence?.[0];const evText=ev?`OCR <b>${escapeHtml(ev.token)}</b> → ${escapeHtml(ev.field)} <b>${escapeHtml(ev.value)}</b> (${Math.round(ev.sim*100)}%)`:'';
     return `<div class="item" style="margin-top:8px" onclick="applyOCRMaterial('${escapeAttr(x.Material_ID)}')"><div class="top"><b>${i===0?'🎯 ':''}${escapeHtml(x.Material_ID)}</b><span class="match">${confidenceLabel(m.score)} ${score}%</span></div><div><b>Marking:</b> ${escapeHtml(main)}</div><div class="muted">${escapeHtml(x.Grade||'')} • ${escapeHtml(x.Thickness_mm||'')} × ${escapeHtml(x.Width_mm||'')} × ${escapeHtml(x.Length_mm||'')} mm • ${escapeHtml(x.Heat_No||'')}</div><div class="muted">${evText}</div></div>`;
   }).join('');
 }
@@ -475,27 +512,64 @@ function applyOCRMaterial(id){
   const best=x.Plate_No||x.Heat_No||x.Coil_No||x.Material_ID||'';
   q.value=best;renderList(true);detail(id);
 }
-async function runOCRVariant(blob,label,whitelist=''){
-  const opts={logger:m=>{if(m.status==='recognizing text'&&m.progress)ocrBox.textContent=label+' • OCR '+Math.round(m.progress*100)+'%'}};
+async function runOCRVariant(blob,label,whitelist='',psm=7){
+  const opts={
+    logger:m=>{if(m.status==='recognizing text'&&m.progress)ocrBox.textContent=label+' • OCR '+Math.round(m.progress*100)+'%'}
+  };
+  // Tesseract.js v5 accepts Tesseract parameters directly. PSM 7/8/13 are
+  // deliberately mixed because steel marking is usually one short text line.
+  opts.tessedit_pageseg_mode=String(psm);
+  opts.preserve_interword_spaces='1';
   if(whitelist)opts.tessedit_char_whitelist=whitelist;
   const result=await Tesseract.recognize(blob,'eng',opts);
   return normalizeOCRText(result.data.text||'');
 }
+function inferOCRWhitelist(){
+  const mode=document.getElementById('ocrFieldMode')?.value||'general';
+  if(mode==='plate')return '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ-';
+  if(mode==='grade')return '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ.-';
+  return '';
+}
+function bestVerifiedIdentity(matches){
+  if(!matches||!matches.length)return null;
+  const top=matches[0], second=matches[1];
+  const margin=top.score-(second?.score||0);
+  // Do not silently choose between two adjacent plates when evidence is weak.
+  if(top.score>=.78 && (margin>=.055 || top.score>=.93))return top;
+  return null;
+}
 async function executeOCR(preferred='selection'){
   if(!ocrImgEl)return;
-  ocrBox.innerHTML='<b>V2.0 đang chạy Multi-OCR + Database Verification...</b>';ocrCandidates.innerHTML='';
+  ocrBox.innerHTML='<b>V2.0.3 đang chạy Multi-OCR + MTC-aware Database Verification...</b>';ocrCandidates.innerHTML='';
   const verify=document.getElementById('ocrVerification');if(verify)verify.style.display='none';
   try{
     const modes=['original','contrast','sharpen','clahe','threshold110','threshold140','threshold170','adaptive','invert'];
+    const psms=[7,8,13];
     const texts=[];
+    const whitelist=inferOCRWhitelist();
+    // For a plate/automatic marking ROI, use a tighter crop to avoid picking
+    // characters from the neighbouring marking line.
+    const fieldMode=document.getElementById('ocrFieldMode')?.value||'general';
+    const pad=(fieldMode==='plate')?0.025:0.06;
     for(const mode of modes){
-      const b=await cropSelectionCanvas(mode);const t=await runOCRVariant(b,mode.toUpperCase(),/\d/.test(mode)?'0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ-':'' );if(t)texts.push(t);
+      for(const psm of psms){
+        const b=await cropSelectionCanvas(mode,null,pad);
+        const t=await runOCRVariant(b,mode.toUpperCase()+' / PSM'+psm,whitelist,psm);
+        if(t)texts.push(t);
+      }
     }
     const cand=extractOCRCandidates(texts);
-    const consensus=cand[0]?.token||normalizeOCRText(texts[0]||'');
+    const matches=rankMaterialMatches(texts);
+    const verified=bestVerifiedIdentity(matches);
+    // Preserve the identity field that actually matched the selected ROI.
+    // Do not force a Plate_No into the search box when the user selected an
+    // MTC/Heat/Coil marking only.
+    const verifiedEvidence=verified?.evidence?.find(e=>e.field===verified.bestField);
+    const consensus=verifiedEvidence?.token || cand[0]?.token || normalizeOCRText(texts[0]||'');
     const combined=texts.join(' | ');
-    const prev=document.getElementById('ocrCropPreview');if(prev){const pb=await cropSelectionCanvas('original');prev.src=URL.createObjectURL(pb);prev.style.display='block';}
-    ocrBox.innerHTML=`<b>OCR consensus:</b> ${escapeHtml(consensus||'Không đọc được')}<br><span class="muted">Raw: ${escapeHtml(combined.slice(0,900))}</span>`;
+    const prev=document.getElementById('ocrCropPreview');if(prev){const pb=await cropSelectionCanvas('original',null,pad);prev.src=URL.createObjectURL(pb);prev.style.display='block';}
+    const verifyNote=verified?`<br><span class="muted">🎯 DB verified: ${escapeHtml(verified.x.Material_ID)} • ${Math.round(verified.score*100)}%</span>`:'';
+    ocrBox.innerHTML=`<b>OCR consensus:</b> ${escapeHtml(consensus||'Không đọc được')}${verifyNote}<br><span class="muted">Raw: ${escapeHtml(combined.slice(0,900))}</span>`;
     if(consensus){q.value=consensus;renderList(true);showOCRCandidates(consensus);}
     renderOCRVerification(texts);
   }catch(e){ocrBox.textContent='OCR lỗi: '+e.message+' • Hãy chọn ROI lớn hơn hoặc chụp gần hơn.';}
