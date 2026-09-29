@@ -1,5 +1,5 @@
 <!doctype html><html lang="vi"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1"><title>Raw Material Yard V1.9.2 Mobile</title>
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>Raw Material Yard V2.0 Mobile</title>
 <link rel="manifest" href="manifest.json">
 <style>
 *{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:#f4f6f8;color:#17202a}
@@ -16,7 +16,7 @@ select,input,textarea{padding:11px;border:1px solid #cbd5e1;border-radius:10px;w
 nav{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid #ddd;display:flex;justify-content:center;gap:8px;padding:8px;z-index:6}
 nav button{background:#fff;color:#17202a;border:1px solid #ddd;padding:8px 12px}.btn{display:inline-block;padding:11px 14px;border-radius:10px;background:#0f172a;color:#fff;cursor:pointer}.ocr-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.chip{border:1px solid #cbd5e1;background:#fff;color:#17202a;border-radius:999px;padding:7px 10px;font-size:12px;cursor:pointer}.match{font-size:11px;padding:3px 7px;border-radius:999px;background:#dcfce7;color:#166534}.warn{background:#fef3c7;color:#92400e}.detail-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.kv{background:#f8fafc;border-radius:10px;padding:9px}.kv b{display:block;font-size:11px;color:#64748b;margin-bottom:3px}.camera-frame{width:100%;max-height:52vh;object-fit:cover;background:#111;border-radius:12px}.ocr-workspace{background:#0f172a;border-radius:14px;padding:8px;touch-action:none;user-select:none}.ocr-canvas{display:block;width:100%;height:auto;border-radius:10px;background:#111;touch-action:none}.ocr-toolbar{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.ocr-stat{font-size:12px;color:#cbd5e1}.ocr-preview{width:100%;max-height:220px;object-fit:contain;background:#111;border-radius:10px;margin-top:8px}.preset{background:#e2e8f0;color:#17202a}.preset.active{background:#0f172a;color:#fff}@media(max-width:700px){.grid{grid-template-columns:repeat(2,1fr)}.filters{grid-template-columns:1fr 1fr}.row{grid-template-columns:1fr}.detail-grid{grid-template-columns:1fr 1fr}button{padding:11px 12px}}
 </style></head><body>
-<header><h1>Raw Material Yard</h1><div class="sub">V1.9.2 • Mobile Field • QA/QC Material Yard Management & Inspection</div></header>
+<header><h1>Raw Material Yard</h1><div class="sub">V2.0 • Steel Marking Recognition • QA/QC Material Yard Management & Inspection</div></header>
 <main>
 <section id="home" class="view active"><div class="actions"><button onclick="show('search')">🔎 Search</button><button onclick="openScan()">📷 Scan</button><button id="btnLinkExcel" onclick="linkExcel()">🔗 Change Excel</button><button id="btnRefreshExcel" onclick="refreshExcel()">🔄 Refresh Excel</button><button id="btnDriveFolder" onclick="chooseDriveFolder()">📁 Set Google Drive Folder</button><button id="btnPublishDrive" onclick="publishToDrive()">📤 Publish to Drive</button><button id="btnRefreshMobile" onclick="refreshMobileData()">🔄 Refresh Data</button><button class="secondary" onclick="exportData()">Export</button></div>
 <div class="card" style="margin:10px 0"><b>Data Source</b><div id="syncInfo" class="muted">Checking...</div><div id="excelInfo" class="muted" style="margin-top:6px"></div><div id="modeInfo" class="muted" style="margin-top:6px"></div><div id="driveFolderInfo" class="muted" style="margin-top:6px"></div></div><div class="grid"><div class="card kpi">Materials<b id="kTotal">0</b></div><div class="card kpi">Plates<b id="kPlate">0</b></div><div class="card kpi">Weight kg<b id="kWeight">0</b></div><div class="card kpi">Pending<b id="kPending">0</b></div></div>
@@ -37,6 +37,7 @@ nav button{background:#fff;color:#17202a;border:1px solid #ddd;padding:8px 12px}
 <div id="ocrWorkspace" class="card" style="display:none;margin-top:10px">
   <h3 style="margin-top:0">🎯 Chọn vị trí OCR</h3>
   <div class="muted">Kéo ngón tay/chuột trên ảnh để khoanh đúng vùng marking. Vùng chọn sẽ được phóng to trước khi OCR.</div>
+  <div class="ocr-actions"><label class="muted" style="display:inline-flex;align-items:center;gap:6px">Loại marking <select id="ocrFieldMode" style="width:auto"><option value="general">Tự động</option><option value="plate">Plate / Coil / Heat No.</option><option value="grade">Grade / Spec</option></select></label></div>
   <div class="ocr-actions">
     <button class="preset active" id="ocrPresetCustom" onclick="setOCRPreset('custom')">✋ Tùy chọn</button>
     <button class="preset" onclick="setOCRPreset('center')">▣ Trung tâm</button>
@@ -53,6 +54,12 @@ nav button{background:#fff;color:#17202a;border:1px solid #ddd;padding:8px 12px}
   </div>
   <img id="ocrCropPreview" class="ocr-preview" style="display:none">
 </div>
+
+<div id="ocrVerification" class="card" style="display:none;margin-top:10px">
+  <h3 style="margin-top:0">🎯 V2.0 • Xác thực marking với Material Master</h3>
+  <div id="ocrEngineStatus" class="muted"></div>
+  <div id="ocrConsensus" class="muted" style="margin-top:6px"></div>
+  <div id="ocrMatches"></div>
 </div>
 <div class="filters">
 <select id="fProject" onchange="renderList()"><option value="">All projects</option></select>
@@ -302,24 +309,187 @@ function beginOCRDrag(ev){if(!ocrImgEl)return;ev.preventDefault();ocrDrag=canvas
 function moveOCRDrag(ev){if(!ocrDrag||!ocrImgEl)return;ev.preventDefault();const p=canvasPoint(ev);const x=Math.min(ocrDrag.x,p.x),y=Math.min(ocrDrag.y,p.y),w=Math.abs(p.x-ocrDrag.x),h=Math.abs(p.y-ocrDrag.y);ocrSelection={x,y,w,h};drawOCRCanvas();}
 function endOCRDrag(ev){if(!ocrDrag)return;const p=canvasPoint(ev);if(ocrSelection.w<20||ocrSelection.h<10){ocrSelection={x:0,y:0,w:ocrImgEl.naturalWidth,h:ocrImgEl.naturalHeight};}ocrDrag=null;drawOCRCanvas();}
 if(ocrCanvas){ocrCanvas.addEventListener('pointerdown',beginOCRDrag);ocrCanvas.addEventListener('pointermove',moveOCRDrag);ocrCanvas.addEventListener('pointerup',endOCRDrag);ocrCanvas.addEventListener('pointercancel',endOCRDrag);}
-function cropSelectionCanvas(preprocess='original'){
-  const scale=1.5;const w=Math.max(1,Math.round(ocrSelection.w*scale)),h=Math.max(1,Math.round(ocrSelection.h*scale));const c=document.createElement('canvas');c.width=Math.min(2400,w);c.height=Math.min(2400,h);const ctx=c.getContext('2d',{willReadFrequently:true});ctx.drawImage(ocrImgEl,ocrSelection.x,ocrSelection.y,ocrSelection.w,ocrSelection.h,0,0,c.width,c.height);
-  if(preprocess!=='original'){const im=ctx.getImageData(0,0,c.width,c.height),d=im.data;for(let i=0;i<d.length;i+=4){let y=.299*d[i]+.587*d[i+1]+.114*d[i+2];if(preprocess==='gray'){}else if(preprocess==='contrast')y=clamp((y-128)*2.0+128,0,255);else if(preprocess==='threshold')y=y>145?255:0;d[i]=d[i+1]=d[i+2]=y}ctx.putImageData(im,0,0);}
+function ocrScaleForROI(){
+  const area=Math.max(1,ocrSelection.w*ocrSelection.h);
+  const shortSide=Math.max(1,Math.min(ocrSelection.w,ocrSelection.h));
+  if(shortSide<120) return 5;
+  if(shortSide<220) return 4;
+  if(shortSide<420) return 3;
+  return 2;
+}
+function cropSelectionCanvas(preprocess='original', scaleOverride=null, padRatio=0.08){
+  if(!ocrImgEl) throw new Error('Ảnh OCR chưa sẵn sàng');
+  const padX=ocrSelection.w*padRatio, padY=ocrSelection.h*padRatio;
+  const sx=Math.max(0,ocrSelection.x-padX), sy=Math.max(0,ocrSelection.y-padY);
+  const ex=Math.min(ocrImgEl.naturalWidth,ocrSelection.x+ocrSelection.w+padX);
+  const ey=Math.min(ocrImgEl.naturalHeight,ocrSelection.y+ocrSelection.h+padY);
+  const sw=Math.max(1,ex-sx), sh=Math.max(1,ey-sy);
+  const scale=scaleOverride||ocrScaleForROI();
+  const w=Math.min(3200,Math.max(300,Math.round(sw*scale))),h=Math.min(2400,Math.max(120,Math.round(sh*scale)));
+  const c=document.createElement('canvas');c.width=w;c.height=h;
+  const ctx=c.getContext('2d',{willReadFrequently:true});
+  ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';
+  ctx.drawImage(ocrImgEl,sx,sy,sw,sh,0,0,w,h);
+  const im=ctx.getImageData(0,0,w,h),d=im.data;
+  for(let i=0;i<d.length;i+=4){
+    const y=.299*d[i]+.587*d[i+1]+.114*d[i+2];
+    d[i]=d[i+1]=d[i+2]=y;
+  }
+  if(preprocess==='contrast'||preprocess==='clahe'||preprocess==='sharpen'||preprocess==='threshold110'||preprocess==='threshold140'||preprocess==='threshold170'||preprocess==='adaptive'||preprocess==='invert'){
+    const gray=new Uint8ClampedArray(w*h);for(let p=0,j=0;p<d.length;p+=4,j++)gray[j]=d[p];
+    if(preprocess==='sharpen'){
+      const out=new Uint8ClampedArray(gray);const k=[0,-1,0,-1,5,-1,0,-1,0];
+      for(let y=1;y<h-1;y++)for(let x=1;x<w-1;x++){let sum=0,ki=0;for(let yy=-1;yy<=1;yy++)for(let xx=-1;xx<=1;xx++)sum+=gray[(y+yy)*w+(x+xx)]*k[ki++];out[y*w+x]=Math.max(0,Math.min(255,sum));}
+      for(let j=0,p=0;j<out.length;j++,p+=4)d[p]=d[p+1]=d[p+2]=out[j];
+    }else if(preprocess==='adaptive'){
+      const out=new Uint8ClampedArray(gray),r=12;
+      for(let y=0;y<h;y++)for(let x=0;x<w;x++){let sum=0,cnt=0;for(let yy=Math.max(0,y-r);yy<=Math.min(h-1,y+r);yy+=2)for(let xx=Math.max(0,x-r);xx<=Math.min(w-1,x+r);xx+=2){sum+=gray[yy*w+xx];cnt++;}out[y*w+x]=gray[y*w+x]>sum/cnt-5?255:0;}
+      for(let j=0,p=0;j<out.length;j++,p+=4)d[p]=d[p+1]=d[p+2]=out[j];
+    }else if(preprocess==='contrast'||preprocess==='clahe'){
+      let min=255,max=0;for(const v of gray){if(v<min)min=v;if(v>max)max=v;}const range=Math.max(1,max-min);
+      for(let j=0,p=0;j<gray.length;j++,p+=4){let v=(gray[j]-min)*255/range;if(preprocess==='clahe')v=(v-128)*1.35+128;v=Math.max(0,Math.min(255,v));d[p]=d[p+1]=d[p+2]=v;}
+    }else if(preprocess==='invert'){
+      for(let j=0,p=0;j<gray.length;j++,p+=4){const v=255-gray[j];d[p]=d[p+1]=d[p+2]=v;}
+    }else{
+      const th=preprocess==='threshold110'?110:preprocess==='threshold170'?170:140;
+      for(let j=0,p=0;j<gray.length;j++,p+=4){const v=gray[j]>th?255:0;d[p]=d[p+1]=d[p+2]=v;}
+    }
+  }
+  ctx.putImageData(im,0,0);
   return new Promise((resolve,reject)=>c.toBlob(b=>b?resolve(b):reject(new Error('Cannot create OCR crop')),'image/png'));
 }
-async function runOCRVariant(blob,label){const result=await Tesseract.recognize(blob,'eng',{logger:m=>{if(m.status==='recognizing text'&&m.progress)ocrBox.textContent=label+' • OCR '+Math.round(m.progress*100)+'%'}});return normalizeOCRText(result.data.text||'')}
+function ocrTextTokens(text){
+  const raw=normalizeOCRText(text).toUpperCase();
+  const tokens=raw.split(/[^A-Z0-9.-]+/).filter(t=>t.length>=3);
+  const compact=tokens.map(t=>t.replace(/[^A-Z0-9]/g,''));
+  const long=compact.filter(t=>t.length>=6);
+  const numeric=long.filter(t=>/^[0-9OILSZB]+$/.test(t));
+  return {raw,tokens,compact,long,numeric};
+}
+function normalizeMarkingToken(s){
+  let t=String(s||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
+  if(!t)return '';
+  // OCR confusions are corrected only for numeric-like candidates; never mutate Grade blindly.
+  if(/^[0-9OILSZB]+$/.test(t)) t=t.replace(/O/g,'0').replace(/[IL]/g,'1').replace(/S/g,'5').replace(/B/g,'8').replace(/Z/g,'2');
+  return t;
+}
+function fieldSimilarity(a,b,numeric=false){
+  const aa=numeric?normalizeMarkingToken(a):ocrCompact(a),bb=numeric?normalizeMarkingToken(b):ocrCompact(b);
+  if(!aa||!bb)return 0;if(aa===bb)return 1;
+  if(aa.includes(bb)||bb.includes(aa))return Math.min(aa.length,bb.length)/Math.max(aa.length,bb.length)*0.985;
+  return similarity(aa,bb);
+}
+function extractOCRCandidates(texts){
+  const map=new Map();
+  texts.forEach((t,idx)=>{
+    const z=ocrTextTokens(t);
+    [...z.long,...z.numeric].forEach(tok=>{
+      const n=normalizeMarkingToken(tok); if(n.length<5)return;
+      const k=n; const rec=map.get(k)||{token:k,count:0,sources:[]};rec.count++;rec.sources.push(idx);map.set(k,rec);
+    });
+    z.tokens.filter(t=>/^[A-Z0-9-]{5,}$/.test(t)).forEach(tok=>{
+      const n=normalizeMarkingToken(tok);if(n.length<5)return;const rec=map.get(n)||{token:n,count:0,sources:[]};rec.count++;rec.sources.push(idx);map.set(n,rec);
+    });
+  });
+  return [...map.values()].sort((a,b)=>b.count-a.count||b.token.length-a.token.length);
+}
+function rankMaterialMatches(texts){
+  const candidates=extractOCRCandidates(texts);
+  const raw=ocrTextTokens(texts.join(' ')).raw;
+  const mode=document.getElementById('ocrFieldMode')?.value||'general';
+  const results=[];
+  const specs=mode==='plate'
+    ? [['Plate_No',.74,true],['Heat_No',.70,true],['Coil_No',.70,true],['Material_ID',.58,true],['Project_No',.18,true],['Grade',.10,false]]
+    : mode==='grade'
+    ? [['Grade',.68,false],['Material_Specification',.38,false],['Plate_No',.42,true],['Heat_No',.28,true]]
+    : [['Plate_No',.72,true],['Heat_No',.68,true],['Coil_No',.68,true],['Material_ID',.56,true],['Grade',.14,false],['Material_Specification',.10,false],['Project_No',.16,true]];
+  for(const x of data){
+    const fieldBest={};
+    for(const [field,weight,numField] of specs){
+      let best=0,bestToken='';
+      const value=String(x[field]??''); if(!value)continue;
+      for(const c of candidates){
+        const sim=fieldSimilarity(c.token,value,numField);
+        if(sim>best){best=sim;bestToken=c.token;}
+      }
+      fieldBest[field]={sim:best,token:bestToken,weight};
+    }
+    let primary=0,primaryField='';
+    for(const [field,weight] of specs){
+      const z=fieldBest[field];if(!z)continue;
+      const s=z.sim*z.weight*(z.sim>=.97?1.06:1);
+      if(s>primary){primary=s;primaryField=field;}
+    }
+    let support=0;
+    const grade=String(x.Grade||'').toUpperCase().replace(/\s+/g,'');
+    if(grade && ocrCompact(raw).includes(ocrCompact(grade))) support+=.12;
+    const rawNums=(raw.match(/\d+(?:\.\d+)?/g)||[]);
+    const dimFields=[x.Thickness_mm,x.Width_mm,x.Length_mm].filter(v=>v!==null&&v!==undefined&&v!=='').map(v=>String(v));
+    let dimHits=0;for(const n of dimFields){if(rawNums.some(r=>fieldSimilarity(r,n,true)>=.98))dimHits++;}
+    support+=Math.min(.15,dimHits*.05);
+    const plate=fieldBest.Plate_No?.sim||0, heat=fieldBest.Heat_No?.sim||0, coil=fieldBest.Coil_No?.sim||0, mid=fieldBest.Material_ID?.sim||0;
+    // Primary identity evidence dominates; supporting fields break ties.
+    let confidence=Math.min(1,Math.max(primary,primary*0.82+support));
+    if(Math.max(plate,heat,coil,mid)>=.90) confidence=Math.max(confidence,.78+support);
+    if(Math.max(plate,heat,coil,mid)>=.97) confidence=Math.max(confidence,.90+support);
+    if(plate>=.995 || heat>=.995 || coil>=.995) confidence=Math.max(confidence,.96+support);
+    const evidence=[];for(const [field,z] of Object.entries(fieldBest)){if(z.sim>=.80)evidence.push({field,token:z.token,value:String(x[field]??''),sim:z.sim});}
+    if(confidence>=.34)results.push({x,score:Math.min(1,confidence),bestField:primaryField,evidence:evidence.slice(0,6)});
+  }
+  return results.sort((a,b)=>b.score-a.score).slice(0,8);
+}
+function confidenceLabel(s){return s>=.82?'🟢 HIGH':s>=.62?'🟡 REVIEW':'🔴 LOW';}
+function renderOCRVerification(texts){
+  const box=document.getElementById('ocrVerification');if(!box)return;
+  box.style.display='block';
+  const candidates=extractOCRCandidates(texts);
+  const mode=document.getElementById('ocrFieldMode')?.value||'general';
+  const top=candidates.slice(0,10).map(c=>`${c.token}${c.count>1?' ×'+c.count:''}`).join(' • ');
+  const matches=rankMaterialMatches(texts);
+  document.getElementById('ocrEngineStatus').innerHTML=`<b>Multi-OCR:</b> ${texts.length} lượt • <b>Scale ROI:</b> ${ocrScaleForROI()}× • <b>Mode:</b> ${escapeHtml(mode)} • <b>Ứng viên:</b> ${escapeHtml(top||'Không có')}`;
+  document.getElementById('ocrConsensus').innerHTML=matches.length?`<b>Database verification:</b> ${matches.length} ứng viên từ ${data.length.toLocaleString()} Materials.`:'Không tìm được ứng viên đủ tin cậy trong Material Master.';
+  const el=document.getElementById('ocrMatches');
+  if(!matches.length){el.innerHTML='<div class="card" style="margin-top:8px"><b>🔴 Không đủ dữ liệu để xác thực</b><br><span class="muted">Hãy mở rộng ROI vừa đủ chữ, chụp gần hơn hoặc chọn lại vùng marking.</span></div>';return;}
+  el.innerHTML=matches.map((m,i)=>{
+    const x=m.x, score=Math.round(m.score*100);const main=x.Plate_No||x.Heat_No||x.Coil_No||x.Material_ID||'-';const ev=m.evidence?.find(e=>e.field===m.bestField)||m.evidence?.[0];const evText=ev?`OCR <b>${escapeHtml(ev.token)}</b> → ${escapeHtml(ev.field)} <b>${escapeHtml(ev.value)}</b> (${Math.round(ev.sim*100)}%)`:'';
+    return `<div class="item" style="margin-top:8px" onclick="applyOCRMaterial('${escapeAttr(x.Material_ID)}')"><div class="top"><b>${i===0?'🎯 ':''}${escapeHtml(x.Material_ID)}</b><span class="match">${confidenceLabel(m.score)} ${score}%</span></div><div><b>Marking:</b> ${escapeHtml(main)}</div><div class="muted">${escapeHtml(x.Grade||'')} • ${escapeHtml(x.Thickness_mm||'')} × ${escapeHtml(x.Width_mm||'')} × ${escapeHtml(x.Length_mm||'')} mm • ${escapeHtml(x.Heat_No||'')}</div><div class="muted">${evText}</div></div>`;
+  }).join('');
+}
+function applyOCRMaterial(id){
+  const x=data.find(z=>z.Material_ID===id);if(!x)return;
+  const best=x.Plate_No||x.Heat_No||x.Coil_No||x.Material_ID||'';
+  q.value=best;renderList(true);detail(id);
+}
+async function runOCRVariant(blob,label,whitelist=''){
+  const opts={logger:m=>{if(m.status==='recognizing text'&&m.progress)ocrBox.textContent=label+' • OCR '+Math.round(m.progress*100)+'%'}};
+  if(whitelist)opts.tessedit_char_whitelist=whitelist;
+  const result=await Tesseract.recognize(blob,'eng',opts);
+  return normalizeOCRText(result.data.text||'');
+}
 async function executeOCR(preferred='selection'){
-  if(!ocrImgEl)return;ocrBox.innerHTML='<b>OCR đang đọc vùng đã chọn...</b>';ocrCandidates.innerHTML='';
-  try{const modes=['original','contrast','threshold'];const texts=[];for(const mode of modes){const b=await cropSelectionCanvas(mode);const t=await runOCRVariant(b,mode==='original'?'Vùng gốc':mode==='contrast'?'Vùng tăng tương phản':'Vùng nhị phân');if(t)texts.push(t)}
-    const ranked=[...new Set(texts)].sort((a,b)=>{const aa=ocrCompact(a),bb=ocrCompact(b);return bb.length-aa.length});const text=ranked[0]||'';const prev=document.getElementById('ocrCropPreview');if(prev){const pb=await cropSelectionCanvas('original');prev.src=URL.createObjectURL(pb);prev.style.display='block';}
-    ocrBox.innerHTML='<b>OCR vùng:</b> '+escapeHtml(text||'Không đọc được text');if(text){q.value=text;renderList(true);showOCRCandidates(text);}
-  }catch(e){ocrBox.textContent='OCR lỗi: '+e.message+' • Hãy chọn vùng khác hoặc chụp gần hơn.'}
+  if(!ocrImgEl)return;
+  ocrBox.innerHTML='<b>V2.0 đang chạy Multi-OCR + Database Verification...</b>';ocrCandidates.innerHTML='';
+  const verify=document.getElementById('ocrVerification');if(verify)verify.style.display='none';
+  try{
+    const modes=['original','contrast','sharpen','clahe','threshold110','threshold140','threshold170','adaptive','invert'];
+    const texts=[];
+    for(const mode of modes){
+      const b=await cropSelectionCanvas(mode);const t=await runOCRVariant(b,mode.toUpperCase(),/\d/.test(mode)?'0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ-':'' );if(t)texts.push(t);
+    }
+    const cand=extractOCRCandidates(texts);
+    const consensus=cand[0]?.token||normalizeOCRText(texts[0]||'');
+    const combined=texts.join(' | ');
+    const prev=document.getElementById('ocrCropPreview');if(prev){const pb=await cropSelectionCanvas('original');prev.src=URL.createObjectURL(pb);prev.style.display='block';}
+    ocrBox.innerHTML=`<b>OCR consensus:</b> ${escapeHtml(consensus||'Không đọc được')}<br><span class="muted">Raw: ${escapeHtml(combined.slice(0,900))}</span>`;
+    if(consensus){q.value=consensus;renderList(true);showOCRCandidates(consensus);}
+    renderOCRVerification(texts);
+  }catch(e){ocrBox.textContent='OCR lỗi: '+e.message+' • Hãy chọn ROI lớn hơn hoặc chụp gần hơn.';}
 }
 function runSelectedOCR(){executeOCR('selection')}
 function runFullImageOCR(){if(!ocrImgEl)return;ocrSelection={x:0,y:0,w:ocrImgEl.naturalWidth,h:ocrImgEl.naturalHeight};drawOCRCanvas();executeOCR('full')}
 function resetOCRSelection(){if(!ocrImgEl)return;ocrSelection={x:0,y:0,w:ocrImgEl.naturalWidth,h:ocrImgEl.naturalHeight};ocrPreset='custom';drawOCRCanvas()}
-function closeOCRWorkspace(clear=true){const box=document.getElementById('ocrWorkspace');if(box)box.style.display='none';if(clear){ocrImageSource=null;ocrImgEl=null;if(ocrObjectURL){URL.revokeObjectURL(ocrObjectURL);ocrObjectURL=null;}}}
-function imageVariant(file,mode){return new Promise((resolve,reject)=>{const img=new Image();const url=URL.createObjectURL(file);img.onload=()=>{const maxW=1800,scale=Math.min(1,maxW/img.naturalWidth),w=Math.max(1,Math.round(img.naturalWidth*scale)),h=Math.max(1,Math.round(img.naturalHeight*scale));const c=document.createElement('canvas');c.width=w;c.height=h;const ctx=c.getContext('2d',{willReadFrequently:true});ctx.drawImage(img,0,0,w,h);if(mode!=='original'){const im=ctx.getImageData(0,0,w,h),d=im.data;for(let i=0;i<d.length;i+=4){let y=0.299*d[i]+0.587*d[i+1]+0.114*d[i+2];if(mode==='threshold')y=y>150?255:0;else if(mode==='contrast')y=Math.max(0,Math.min(255,(y-128)*1.8+128));d[i]=d[i+1]=d[i+2]=y}ctx.putImageData(im,0,0)}c.toBlob(b=>{URL.revokeObjectURL(url);b?resolve(b):reject(new Error('Cannot create image'))},'image/jpeg',0.92)};img.onerror=()=>{URL.revokeObjectURL(url);reject(new Error('Cannot read image'))};img.src=url})}
+function closeOCRWorkspace(clear=true){const box=document.getElementById('ocrWorkspace');if(box)box.style.display='none';const v=document.getElementById('ocrVerification');if(v)v.style.display='none';if(clear){ocrImageSource=null;ocrImgEl=null;if(ocrObjectURL){URL.revokeObjectURL(ocrObjectURL);ocrObjectURL=null;}}}
+function imageVariant(file,mode){return new Promise((resolve,reject)=>{const img=new Image();const url=URL.createObjectURL(file);img.onload=()=>{const maxW=2400,scale=Math.min(1,maxW/img.naturalWidth),w=Math.max(1,Math.round(img.naturalWidth*scale)),h=Math.max(1,Math.round(img.naturalHeight*scale));const c=document.createElement('canvas');c.width=w;c.height=h;const ctx=c.getContext('2d',{willReadFrequently:true});ctx.drawImage(img,0,0,w,h);if(mode!=='original'){const im=ctx.getImageData(0,0,w,h),d=im.data;for(let i=0;i<d.length;i+=4){let y=0.299*d[i]+0.587*d[i+1]+0.114*d[i+2];if(mode==='threshold')y=y>150?255:0;else if(mode==='contrast')y=Math.max(0,Math.min(255,(y-128)*1.8+128));d[i]=d[i+1]=d[i+2]=y}ctx.putImageData(im,0,0)}c.toBlob(b=>{URL.revokeObjectURL(url);b?resolve(b):reject(new Error('Cannot create image'))},'image/jpeg',0.94)};img.onerror=()=>{URL.revokeObjectURL(url);reject(new Error('Cannot read image'))};img.src=url})}
 async function ocrImage(file){if(!file)return;loadOCRImage(file)}
 function showOCRCandidates(text){const raw=normalizeOCRText(text);const toks=raw.toUpperCase().split(/[^A-Z0-9.-]+/).filter(t=>t.length>=3);const uniq=[...new Set(toks)].slice(0,16);ocrCandidates.innerHTML=uniq.map(t=>`<button class="chip" onclick="useOCRToken('${escapeAttr(t)}')">${escapeHtml(t)}</button>`).join('')}
 function useOCRToken(t){q.value=t;renderList(true)}
@@ -501,7 +671,13 @@ function renderHome(){
   if(recent) recent.innerHTML=data.slice(-5).reverse().map(x=>card(x)).join('')||'<div class="muted">No materials.</div>';
 }
 
-function searchScore(x,raw,tokens){const fields=['Material_ID','Plate_No','Heat_No','Coil_No','PO_ID','MTC_No','Grade','Thickness_mm','Width_mm','Length_mm','Project_Code','Project_No','Manufacturer'];const vals=fields.map(k=>String(x[k]??''));const joined=vals.join(' ').toUpperCase();let score=0,hit=0;const rr=ocrCompact(raw);if(rr&&ocrCompact(joined).includes(rr))score+=1.0;for(const t of tokens){const tc=ocrCompact(t);if(!tc)continue;let best=0;for(const v of vals){const vc=ocrCompact(v);if(!vc)continue;if(vc.includes(tc)||tc.includes(vc))best=Math.max(best,Math.min(tc.length,vc.length)/Math.max(tc.length,vc.length)*0.98);else if(tc.length>=4&&vc.length>=4)best=Math.max(best,similarity(tc,vc));}if(best>=0.55){hit++;score+=best}}return tokens.length?score/(tokens.length+1):score}
+function searchScore(x,raw,tokens){
+  const fields=['Material_ID','Plate_No','Heat_No','Coil_No','PO_ID','MTC_No','Grade','Thickness_mm','Width_mm','Length_mm','Project_Code','Project_No','Manufacturer'];
+  const vals=fields.map(k=>String(x[k]??''));let score=0;
+  const rr=ocrCompact(raw);if(rr){for(const f of ['Plate_No','Heat_No','Coil_No','Material_ID']){const v=String(x[f]??'');if(v&&fieldSimilarity(rr,v,true)>=.90)score=Math.max(score,.95)}}
+  for(const t of tokens){const tc=normalizeMarkingToken(t);if(!tc)continue;let best=0;for(const v of vals){const vc=ocrCompact(v);if(!vc)continue;const num=/^[0-9]+$/.test(tc)&&/^[0-9]+$/.test(ocrCompact(v));best=Math.max(best,fieldSimilarity(tc,vc,num));}score+=best*.55;}
+  return tokens.length?Math.min(1,score/tokens.length):score;
+}
 function renderList(fromOCR=false){const raw=(document.getElementById('q').value||'').trim(),tokens=raw.toUpperCase().split(/[^A-Z0-9.-]+/).filter(t=>t.length>=2),fp=fProject.value,fg=fGrade.value,fs=fStatus.value,fy=fYard.value;let base=data.filter(x=>!fp||x.Project_Code==fp).filter(x=>!fg||x.Grade==fg).filter(x=>!fs||x.Material_Status==fs).filter(x=>!fy||x.Yard_ID==fy);if(!raw){list.innerHTML=base.slice(0,300).map(x=>card(x)).join('')||'<div class="card">No data.</div>';return}const exact=base.filter(x=>{const blob=['Material_ID','Plate_No','Heat_No','Coil_No','PO_ID','MTC_No','Grade','Thickness_mm','Width_mm','Length_mm','Project_Code','Project_No','Manufacturer'].map(k=>String(x[k]??'').toUpperCase()).join(' ');return tokens.length?tokens.every(t=>blob.includes(t)):blob.includes(raw.toUpperCase())});if(exact.length){list.innerHTML=exact.slice(0,300).map(x=>card(x)).join('');return}const ranked=base.map(x=>({x,s:searchScore(x,raw,tokens)})).filter(z=>z.s>=0.35).sort((a,b)=>b.s-a.s).slice(0,30);list.innerHTML=ranked.length?`<div class="card"><b>${fromOCR?'🔎 OCR gần đúng':'🔎 Kết quả gần đúng'}</b><div class="muted">Không có exact match. Hiển thị các vật tư có mức tương đồng cao nhất.</div></div>`+ranked.map(z=>card(z.x,z.s)).join(''):'<div class="card"><b>Không tìm thấy vật tư.</b><br><span class="muted">Thử Plate / Heat / Coil / Material ID hoặc bấm một mã OCR ở phía trên.</span></div>'}
 function detail(id){current=id;let x=data.find(z=>z.Material_ID===id);if(!x)return;const fields=[['Material ID',x.Material_ID],['Status',x.Material_Status],['Plate No.',x.Plate_No],['Heat No.',x.Heat_No],['Coil No.',x.Coil_No],['Grade',x.Grade],['Specification',x.Material_Specification],['Size',`${x.Thickness_mm||'-'} × ${x.Width_mm||'-'} × ${x.Length_mm||'-'} mm`],['Qty',x.Qty_Pcs],['Weight kg',x.Weight_Kg],['Project',x.Project_Code],['Project No.',x.Project_No],['PO',x.PO_ID],['Yard',x.Yard_ID],['Manufacturer',x.Manufacturer],['MTC',x.MTC_No],['MRIR',x.MRIR_No],['Inspection Date',x.Inspection_Date],['Remark',x.Remark]];detailBody.innerHTML=`<div class="actions"><button class="secondary" onclick="show('search')">← Search</button><button onclick="inspect('${escapeAttr(id)}')">✓ Check</button><button onclick="takePhoto('${escapeAttr(id)}')">📷 Photo</button><button onclick="updateMat('${escapeAttr(id)}')">✎ Update</button></div><div class="card"><h2>${escapeHtml(x.Material_ID)}</h2><span class="badge">${escapeHtml(x.Material_Status||'')}</span><div class="detail-grid" style="margin-top:10px">${fields.map(([k,v])=>`<div class="kv"><b>${escapeHtml(k)}</b>${escapeHtml(v==null||v===''?'-':v)}</div>`).join('')}</div></div><div class="card"><b>Inspection / Update History</b>${hist.filter(h=>h.Material_ID===id).slice(-15).reverse().map(h=>`<p class="muted">${escapeHtml(h.Updated_Date||'')} • ${escapeHtml(h.Field_Name||h.Action||'')} : ${escapeHtml(h.Old_Value||'')} → ${escapeHtml(h.New_Value||'')}</p>`).join('')||'<p class="muted">No local updates</p>'}</div>`;show('detail')}
 function inspect(id){current=id;let fs=['Marking','Grade','Thickness','Width','Length','Surface','Quantity','MTC'];inspectBody.innerHTML=`<div class="actions"><button class="secondary" onclick="detail('${id}')">← Material</button></div><div class="card"><h2>Material Check</h2>${fs.map(f=>`<div class="check"><b>${f}</b><select id="r_${f}"><option>PASS</option><option>HOLD</option><option>FAIL</option><option>N/A</option></select></div>`).join('')}<textarea id="remark" placeholder="Remark (required for HOLD/FAIL)"></textarea><button onclick="saveInspection('${id}')">Save Inspection</button></div>`;show('inspect')}
